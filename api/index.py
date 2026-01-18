@@ -29,12 +29,14 @@ def home():
     try:
         country_data, market_data, deposit_count = gather_data()
         production_efficiency = calculate_best_production_efficiency(country_data,market_data)
-        return render_template("index.html",
-                               data=country_data,
-                               market_data=market_data,
-                               deposit_count=deposit_count, 
-                               production_efficiency=production_efficiency,
-                               item_icons=ITEM_ICONS)
+        context = {
+            'data':country_data,
+            'market_data':market_data,
+            'deposit_count':deposit_count, 
+            'production_efficiency':production_efficiency,
+            'item_icons':ITEM_ICONS
+        }
+        return render_template("index.html",**context)
     except:
         raise
 
