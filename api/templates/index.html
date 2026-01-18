@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <title>Warera Eco Tools</title>
+</head>
+<body>
+    <div class="container">
+        <div id="infoDialogOverlay" class="dialog-overlay">
+    <div class="dialog-box">
+        <h3>ℹ️ About optimal resources</h3>
+         <p>
+        This calculation is designed to answer a simple strategic question:
+        <strong>which item should be produced, and in which country, to earn the most profit per hour?</strong>
+        Instead of looking only at market prices or production bonuses, it compares all production options
+        using a single, normalized efficiency metric.
+    </p>
+
+    <p>
+        The model assumes a fixed amount of available production work per hour and self-production with
+        no raw material costs. Each country-item combination is evaluated by estimating how much profit
+        can be generated if all available production capacity is spent on that item in that country.
+    </p>
+
+    {% raw %}
+    <p>
+        The profit per hour is estimated using the following formula:
+    </p>
+
+    <div class="math-block">
+    $$
+    \text{Profit per hour}
+    =
+    \frac{(\text{Sell Price} - \text{Raw Cost}) \times \text{Quantity} \times (1 + \text{Production Bonus})}
+         {\text{Work}}
+    \times \text{Work per Hour}
+    $$
+    </div>
+
+    <p>
+        To ensure fair comparisons, the result is then normalized per unit produced:
+    </p>
+
+    <div class="math-block">
+    $$
+    \text{Normalized Profit per Hour}
+    =
+    \frac{\text{Profit per hour}}{\text{Quantity}}
+    $$
+    </div>
+    {% endraw %}
+
+    <p>
+        The final output ranks all possible country and item combinations by their normalized profit per hour,
+        highlighting the most efficient long-term production opportunities under current market conditions.
+    </p>
+
+        <div class="dialog-actions">
+            <button class="btn-soft" id="closeInfoDialog">Blah Blah Blah</button>
+        </div>
+    </div>
+</div>
+
+        <header>
+            <h1>Warera Eco Tools</h1>
+            <p class="subtitle">Optimize your resource production and maximize profits</p>
+        </header>
+
+        <!-- Optimal Resource at Top -->
+        <div class="optimal-hero">
+            <div class="optimal-label">💎 Most optimal resource</div>
+            <div class="optimal-resource-name">
+                <img
+                    src="{{ url_for('static', filename=item_icons[production_efficiency[0].item]) }}"
+                    alt="{{ production_efficiency[0].item }}"
+                    title="{{ production_efficiency[0].item }}"
+                >
+                <span class="pointer" onclick="window.open('https://app.warera.io/country/{{ production_efficiency[0].country_id }}', '_blank').focus();">Region: {{ production_efficiency[0].country }}</span>
+            </div>
+            <div class="optimal-profit">Expected Profit: {{ production_efficiency[0].profit_per_hour }}/hour</div>
+            <div class="optimal-details">{{ production_efficiency[0].result }}</div>
+            <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
+                <button class="btn-soft" id="openInfoDialog">How is this possible?</button>
+        </div>
+
+                <!-- Countries Table -->
+        <div class="countries-section">
+            <h2>Countries <small>Click row to view</small></h2>
+            <p class="section-note">Deposit bonuses are not accounted for</p>
+            <table id="countryTable" class="display nowrap">
+                <thead>
+                    <tr>
+                        <th>Country</th>
+                        <th>Specialization</th>
+                        <th>Income Tax (%)</th>
+                        <th>Production Bonus (%)</th>
+                        <th>Found Deposit</th>
+                        <th>Time Remaining</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for country in data %}
+                    <tr onclick="window.open('https://app.warera.io/country/{{ country.country_id }}', '_blank').focus();">
+                        <td>{{ country.name }}</td>
+                        <td>
+                            <img
+                                src="{{ url_for('static', filename=item_icons[country.specialization]) }}"
+                                alt="{{ country.specialization }}"
+                                title="{{ country.specialization }}"
+                            >
+                        </td>
+                        <td>{{ country.taxes.income }}%</td>
+                        <td>{{ country.production_bonus }}%</td>
+                        <td>
+                            {% if country.deposit_type %}
+                                <img
+                                    src="{{ url_for('static', filename=item_icons[country.deposit_type]) }}"
+                                    alt="{{ country.deposit_type }}"
+                                    title="{{ country.deposit_type }}"
+                                >
+                            {% else %}
+                                No deposit found
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if country.deposit_time_remaining %}
+                                {{ country.deposit_time_remaining }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="stats-grid">
+            <!-- Market Prices -->
+            <div class="stat-card">
+                <h3>💰 Market Prices <small>Click to view</small></h3>
+                <div class="stat-list">
+                    {% for market in market_data %}
+                    <div class="stat-item pointer" onclick="window.open('https://app.warera.io/market/trading?itemCode={{ market.top_buy_order.itemCode }}', '_blank').focus();">
+                        <span class="stat-label">
+                            <img
+                                src="{{ url_for('static', filename=item_icons[market.top_buy_order.itemCode]) }}"
+                                alt="{{ market.top_buy_order.itemCode }}"
+                                title="{{ market.top_buy_order.itemCode }}"
+                            >
+                        </span>
+                        <div class="price-group">
+                            <div class="price-row">
+                                <span class="price-label">Buy:</span>
+                                <span class="buy-price">{{ market.top_buy_order.price }}</span>
+                            </div>
+                            <div class="price-row">
+                                <span class="price-label">Sell:</span>
+                                <span class="sell-price">{{ market.top_sell_order.price }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Most Profitable -->
+            <div class="stat-card">
+                <h3>📊 Most Profitable</h3>
+                <div class="stat-list">
+                    {% for metric in production_efficiency %}
+                    <div class="stat-item">
+                        <span class="stat-label">{{ metric.country }}</span>
+                        <span class="stat-value"><img
+                                    src="{{ url_for('static', filename=item_icons[metric.item]) }}"
+                                    alt="{{ metric.item }}"
+                                    title="{{ metric.item }}"
+                                ></span>
+                        <span class="stat-value">~{{ metric.profit_per_hour }}/per hour</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Deposit Count -->
+            <div class="stat-card">
+                <h3>⛏️ Resource Deposit Count</h3>
+                <div class="stat-list">
+                    {% for resource, count in deposit_count.items() %}
+                    <div class="stat-item">
+                        <span class="stat-label">
+                            <img
+                                src="{{ url_for('static', filename=item_icons[resource]) }}"
+                                alt="{{ resource }}"
+                                title="{{ resource }}"
+                            >
+                            {{ resource }}
+                        </span>
+                        <span class="stat-value">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+
+
+        <footer>
+            <p>Warera Eco Tools</p>
+            <p>Suggestions? Find me <a href="https://app.warera.io/user/68e563d741440cb58b76a7b9">here</a></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
