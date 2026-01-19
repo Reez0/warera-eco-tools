@@ -156,32 +156,24 @@ def calculate_best_production_efficiency(country_data, market_data):
     entrepreneurship_per_hour = 10
 
     def profit_per_hour_normalized(item_name, item_data, country_data):
-        profit_per_craft = (item_data["sell"] - item_data["raw_cost"]) * item_data["quantity"]
+        sell = item_data["sell"]
+        work = item_data["work"]
 
-        bonus_applies = item_name == country_data["special"] or (
-            item_name == "ammo" and country_data["special"] == "ammo"
+        bonus_applies = (
+            item_name == country_data["special"] or
+            (item_name == "ammo" and country_data["special"] == "ammo")
         )
+
         bonus_multiplier = 1 + (country_data["bonus"] / 100) if bonus_applies else 1
-        profit_per_craft *= bonus_multiplier
+        btc_per_pp = (sell * bonus_multiplier) / work
+        profit_per_hour = btc_per_pp * entrepreneurship_per_hour
+        explanation = (
+            f"Current selling price={sell}, Required PP={work}, "
+            f"bonus={'yes' if bonus_applies else 'no'} ({country_data['bonus']}%), "
+            f"BTC/PP={btc_per_pp:.4f}"
+        )
 
-        crafts_per_hour = entrepreneurship_per_hour / item_data["work"]
-
-        profit_hour = profit_per_craft * crafts_per_hour
-
-        profit_hour_normalized = profit_hour / item_data["quantity"]
-
-        explanation_parts = []
-        if bonus_applies:
-            explanation_parts.append(
-                f"This country specializes in {item_name} giving a {(country_data['bonus'] / 100):.2%} production bonus"
-            )
-        else:
-            explanation_parts.append("no production bonus applied")
-        explanation_parts.append(f"sell price per unit = {item_data['sell']} BTC, work per craft = {item_data['work']}")
-        explanation_parts.append(f"normalized profit per hour = {profit_hour_normalized:.3f} BTC/hr")
-        explanation = "; ".join(explanation_parts)
-
-        return profit_hour_normalized, explanation
+        return profit_per_hour, explanation
 
     results = []
     for country_name, country_data_item in countries.items():
@@ -201,68 +193,179 @@ def calculate_best_production_efficiency(country_data, market_data):
     results_sorted = sorted(results, key=lambda x: x["profit_per_hour"], reverse=True)
     return results_sorted[:10]
 
-def calculate_automated_engine_profit(country_data, market_data, engine_level=1):
-    work_per_day = 24 * engine_level
-    work_per_hour = work_per_day / 24 
+def get_user_companies_workers(user_id):
+    try:
+        url = "https://api2.warera.io/trpc/user.getUserLite,company.getCompaniesCount,company.getActiveCompaniesCount,worker.getWorkers?batch=1&"
+        payload = f'''input={{
+            "0":{{"userId":"{user_id}"}},
+            "1":{{"userId":"{user_id}"}},
+            "2":{{"userId":"{user_id}"}},
+            "3":{{"userId":"{user_id}"}}}}
+            '''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        user = data[0]['result']['data']
+        user_companies_workers = data[3]['result']['data']
+        user_detail = {
+            'id': user_id,
+            'username': user['username'],
+            'country': user['country'],
+            'energy': user['skills']['energy'],
+            'production': user['skills']['production'],
+            'entrepreneurship': user['skills']['entrepreneurship']
+        }
+        return user_detail, user_companies_workers
+    except Exception as e:
+        raise Exception(f'Unable to retrieve user and company info {e}')
+    
+def get_company_by_id(company_id):
+    try:
+        url = "https://api2.warera.io/trpc/user.getMe,company.getById?batch=1&"
+        payload = f'''input={{
+                        "1":{{"companyId":"{company_id}"}}
+                       }}
+                        '''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        company = data[1]['result']['data']
+        return company
+    except Exception as e:
+        raise Exception(f'Unable to retrieve company by ID {e}')
 
-    items = {}
+def build_market_lookup(market_data):
+    prices = {}
     for i in market_data:
-        item_code = i['top_buy_order']['itemCode']
-        base = WORK_MAP[item_code].copy()
-        base['sell'] = i['top_sell_order']['price']
-        base['raw_cost'] = 0 
-        items[item_code] = base
+        code = i['top_sell_order']['itemCode']
+        prices[code] = i['top_sell_order']['price']
+    return prices
 
-    countries = {}
-    for i in country_data:
-        countries[i['name']] = {
-            'special': i['specialization'],
-            'bonus': i['production_bonus']
+
+def build_country_bonus_map(country_data, user_country):
+    bonus_map = {}
+    for c in country_data:
+        if c['code'] == user_country and c['specialization']:
+            bonus_map[c['specialization']] = c['production_bonus'] / 100
+    return bonus_map
+
+
+def automation_btc_per_day(engine_level, storage_pp, item_code, market_prices, country_bonus_map):
+    if (
+        engine_level <= 0
+        or item_code not in market_prices
+        or item_code not in WORK_MAP
+    ):
+        return 0
+
+    pp_per_day = engine_level * 24
+    effective_pp = min(pp_per_day, storage_pp)
+
+    pp_per_unit = WORK_MAP[item_code]['work']
+    units_per_day = effective_pp / pp_per_unit
+
+    price = market_prices[item_code]
+    bonus = country_bonus_map.get(item_code, 0)
+
+    return units_per_day * price * (1 + bonus)
+
+
+def decision_engine(player_id):
+    user_detail, user_companies_workers = get_user_companies_workers(player_id)
+    country_data, market_data, _ = gather_data()
+
+    market_prices = build_market_lookup(market_data)
+    country_bonus_map = build_country_bonus_map(country_data, user_detail['country'])
+
+    user_companies = []
+    for entry in user_companies_workers['workersPerCompany']:
+        company_data = get_company_by_id(entry['company']['_id'])
+
+        storage_level = company_data['activeUpgradeLevels'].get('storage', 1)
+        automated_level = company_data['activeUpgradeLevels'].get('automatedEngine', 0)
+
+        user_companies.append({
+            'name': company_data['name'],
+            'item_code': company_data['itemCode'],
+            'automated_engine_level': automated_level,
+            'storage_pp': storage_level * 200,
+            'workers': entry['workers']
+        })
+
+    auto_btc = 0
+    auto_breakdown = []
+
+    for c in user_companies:
+        btc = automation_btc_per_day(
+            c['automated_engine_level'],
+            c['storage_pp'],
+            c['item_code'],
+            market_prices,
+            country_bonus_map
+        )
+
+        auto_btc += btc
+        auto_breakdown.append({
+            'company': c['name'],
+            'item': c['item_code'],
+            'btc_per_day': round(btc, 2),
+            'engine_level': c['automated_engine_level']
+        })
+
+    summary_blurb = (
+        f"With your current setup, your automated engines are generating roughly "
+        f"{round(auto_btc, 2)} BTC per day in total."
+    )
+
+    best_item = calculate_best_production_efficiency(country_data, market_data)[0]
+    optimal_item_code = best_item['item']
+
+    producing_optimal = any(
+        c['item_code'] == optimal_item_code for c in user_companies
+    )
+
+    optimal_result = None
+
+    if not producing_optimal:
+        optimal_btc = 0
+
+        for c in user_companies:
+            btc = automation_btc_per_day(
+                c['automated_engine_level'],
+                c['storage_pp'],
+                optimal_item_code,
+                market_prices,
+                country_bonus_map
+            )
+            optimal_btc += btc
+
+        if auto_btc > 0:
+            increase_pct = ((optimal_btc - auto_btc) / auto_btc) * 100
+            delta_btc = optimal_btc - auto_btc
+        else:
+            increase_pct = 100
+            delta_btc = optimal_btc
+
+        optimal_result = {
+            "item": optimal_item_code,
+            "btc_per_day_if_switched": round(optimal_btc, 2),
+            "blurb": (
+                f"You currently do not produce the most optimal resource. "
+                f"By switching the remaining companies, you could increase BTC/day by "
+                f"{round(increase_pct, 2)}%, or ~{round(delta_btc, 2)} BTC more than your current setup."
+            )
         }
 
-    def engine_profit_per_hour(item_name, item_data, country_data):
-        profit_per_craft = (item_data["sell"] - item_data["raw_cost"]) * item_data["quantity"]
-
-        # Apply country bonus if applicable
-        bonus_applies = item_name == country_data["special"] or (
-            item_name == "ammo" and country_data["special"] == "ammo"
-        )
-        bonus_multiplier = 1 + (country_data["bonus"] / 100) if bonus_applies else 1
-        profit_per_craft *= bonus_multiplier
-
-        # Crafts per hour contributed by engine
-        crafts_per_hour = work_per_hour / item_data["work"]
-
-        # Profit per hour
-        profit_hour = profit_per_craft * crafts_per_hour
-
-        # Explanation
-        explanation_parts = [
-            f"Automated engine level {engine_level} contributes {work_per_hour:.2f} work/hour",
-        ]
-        if bonus_applies:
-            explanation_parts.append(
-                f"this country specializes in {item_name} giving a {(country_data['bonus']/100):.2%} production bonus"
-            )
-        else:
-            explanation_parts.append("no production bonus applied")
-        explanation_parts.append(f"sell price per unit = {item_data['sell']} BTC, work per craft = {item_data['work']}")
-        explanation_parts.append(f"automated profit per hour = {profit_hour:.3f} BTC/hr")
-        explanation = "; ".join(explanation_parts)
-
-        return profit_hour, explanation
-
-    results = []
-    for country_name, country_data_item in countries.items():
-        for item_name, item_data in items.items():
-            profit, explanation = engine_profit_per_hour(item_name, item_data, country_data_item)
-            results.append({
-                "country": country_name,
-                "item": item_name,
-                "profit_per_hour": round(profit, 3),
-                "result": explanation
-            })
-
-    results_sorted = sorted(results, key=lambda x: x["profit_per_hour"], reverse=True)
-
-    return results_sorted[:10]
+    return {
+        "summary": summary_blurb,
+        "automation": auto_breakdown,
+        "optimal_switch": optimal_result
+    }

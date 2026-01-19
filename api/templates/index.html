@@ -14,55 +14,43 @@
     <div class="container">
         <div id="infoDialogOverlay" class="dialog-overlay">
     <div class="dialog-box">
-        <h3>ℹ️ About optimal resources</h3>
-         <p>
-        This calculation is designed to answer a simple strategic question:
-        <strong>which item should be produced, and in which country, to earn the most profit per hour?</strong>
-        Instead of looking only at market prices or production bonuses, it compares all production options
-        using a single, normalized efficiency metric.
-    </p>
+        <h3>ℹ️ About Optimal Resources</h3>
+        <p>
+            This calculation answers a simple strategic question: 
+            <strong>which item should be produced, and in which country, to earn the most profit per hour?</strong>
+            Instead of looking only at market prices or production bonuses, it compares all production options using a single, normalized efficiency metric.
+        </p>
 
-    <p>
-        The model assumes a fixed amount of available production work per hour and self-production with
-        no raw material costs. Each country-item combination is evaluated by estimating how much profit
-        can be generated if all available production capacity is spent on that item in that country.
-    </p>
+        <p>
+            The model assumes self-production with no raw material costs and a fixed amount of production work per hour.  
+            Each country-item combination is evaluated by estimating how much profit can be generated if all available production capacity is spent on that item in that country.
+        </p>
 
-    {% raw %}
-    <p>
-        The profit per hour is estimated using the following formula:
-    </p>
+        <p>The profit per hour is estimated using the following formula:</p>
 
-    <div class="math-block">
-    $$
-    \text{Profit per hour}
-    =
-    \frac{(\text{Sell Price} - \text{Raw Cost}) \times \text{Quantity} \times (1 + \text{Production Bonus})}
-         {\text{Work}}
-    \times \text{Work per Hour}
-    $$
-    </div>
+        <div class="math-block">
+            $$
+            \text{Profit per hour} = 
+            \frac{\text{Sell Price} \times (1 + \text{Production Bonus})}{\text{Work Required}} 
+            \times \text{Entrepreneurship per Hour}
+            $$
+        </div>
 
-    <p>
-        To ensure fair comparisons, the result is then normalized per unit produced:
-    </p>
+        <p>To ensure fair comparisons, the result is normalized per unit produced:</p>
 
-    <div class="math-block">
-    $$
-    \text{Normalized Profit per Hour}
-    =
-    \frac{\text{Profit per hour}}{\text{Quantity}}
-    $$
-    </div>
-    {% endraw %}
+        <div class="math-block">
+            $$
+            \text{Normalized Profit per Hour} = \frac{\text{Profit per hour}}{1 \text{ unit}}
+            $$
+        </div>
 
-    <p>
-        The final output ranks all possible country and item combinations by their normalized profit per hour,
-        highlighting the most efficient long-term production opportunities under current market conditions.
-    </p>
+        <p>
+            The final output ranks all possible country-item combinations by normalized profit per hour, 
+            highlighting the most efficient long-term production opportunities under current market conditions.
+        </p>
 
         <div class="dialog-actions">
-            <button class="btn-soft" id="closeInfoDialog">Blah Blah Blah</button>
+            <button class="btn-soft" id="closeInfoDialog">Close</button>
         </div>
     </div>
 </div>
@@ -72,7 +60,6 @@
             <p class="subtitle">Optimize your resource production and maximize profits</p>
         </header>
 
-        <!-- Optimal Resource at Top -->
         <div class="optimal-hero">
             <div class="optimal-label">💎 Most optimal resource</div>
             <div class="optimal-resource-name">
@@ -86,10 +73,16 @@
             <div class="optimal-profit">Expected Profit: {{ production_efficiency[0].profit_per_hour }}/hour</div>
             <div class="optimal-details">{{ production_efficiency[0].result }}</div>
             <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
-                <button class="btn-soft" id="openInfoDialog">How is this possible?</button>
+            <div class="optimal-input-group">  
+            <button class="btn-soft" id="openInfoDialog">How is this possible?</button>
+            </div>  
+            <div class="optimal-label">⚙️ Calculate your automated engine output</div>
+            <div class="optimal-input-group">
+                <input type="text" class="optimal-input" placeholder="Enter a player id or warera player profile url" id="playerInput">
+                <button id="getProfileData" class="btn-soft">Get profile data</button>
+            </div>
         </div>
 
-                <!-- Countries Table -->
         <div class="countries-section">
             <h2>Countries <small>Click row to view</small></h2>
             <p class="section-note">Deposit bonuses are not accounted for</p>

@@ -406,7 +406,7 @@
             letter-spacing: 0.05em;
         }
 
-        .dialog-box p {
+        .dialog-box p, ul {
             font-size: 0.7rem;
             color: #888;
             line-height: 1.6;
@@ -420,6 +420,65 @@
 
         .dialog-overlay.show {
     display: flex;
+}
+
+        .optimal-input-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .optimal-input {
+            flex: 1;
+            min-width: 250px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .optimal-input::placeholder {
+            color: #666;
+        }
+
+        .optimal-input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .optimal-input-group {
+                flex-direction: column;
+            }
+            
+            .optimal-input {
+                min-width: 100%;
+            }
+            
+            .optimal-input-group .btn-soft {
+                width: 100%;
+            }
+        }
+.btn-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(26, 26, 26, 0.2); 
+    border-top-color: #fff; 
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+/* Spin animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .info-text {

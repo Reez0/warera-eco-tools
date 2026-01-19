@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, render_template
-from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency
+from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -39,4 +39,10 @@ def home():
         return render_template("index.html",**context)
     except:
         raise
+    
+@app.route("/get-summary")
+def get_summary():
+    player_id = request.args.get('playerId')
+    result = decision_engine(player_id)
+    return jsonify(result)
 
