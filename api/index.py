@@ -3,6 +3,7 @@ from .core.warera_api import get_country_information, get_map_data, gather_data,
 import time
 import os
 import json
+import logging
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -52,6 +53,7 @@ def get_summary():
 
 @app.route("/admin/refresh", methods=["GET"])
 def refresh_top_players():
+    logging.info("Cron refresh ran")
     print("Looks like it works! Yay")
     return jsonify({'success': True})
 
