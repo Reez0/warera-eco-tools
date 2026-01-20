@@ -52,5 +52,6 @@ def get_summary():
 
 @app.route("/admin/refresh", methods=["GET"])
 def refresh_top_players():
-    return jsonify({'success': True,'Environment': json.dumps(dict(os.environ))})
+    print("Looks like it works! Yay")
+    return jsonify({'success': True})
 
