@@ -1,5 +1,7 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, abort, jsonify, request, render_template
 from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine
+import time
+import os
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -36,6 +38,7 @@ def home():
             'production_efficiency':production_efficiency,
             'item_icons':ITEM_ICONS
         }
+        
         return render_template("index.html",**context)
     except:
         raise
@@ -45,4 +48,8 @@ def get_summary():
     player_id = request.args.get('playerId')
     result = decision_engine(player_id)
     return jsonify(result)
+
+@app.route("/admin/refresh", methods=["GET"])
+def refresh_top_players():
+    return jsonify({'success': True,'Environment': os.environ})
 
