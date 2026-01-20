@@ -2,6 +2,7 @@ from flask import Flask, abort, jsonify, request, render_template
 from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine
 import time
 import os
+import json
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -51,5 +52,5 @@ def get_summary():
 
 @app.route("/admin/refresh", methods=["GET"])
 def refresh_top_players():
-    return jsonify({'success': True,'Environment': os.environ})
+    return jsonify({'success': True,'Environment': json.dumps(dict(os.environ))})
 
