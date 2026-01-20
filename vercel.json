@@ -14,7 +14,7 @@
   "crons": [
     {
       "path": "/admin/refresh",
-      "schedule": "* * * * *"
+      "schedule": "01 17 * * *"
     }
   ]
 }
