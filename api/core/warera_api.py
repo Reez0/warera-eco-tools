@@ -1,8 +1,12 @@
 import requests
 import os
 from collections import Counter
+import json
+from datetime import datetime, timezone
 
 API_KEY = os.getenv('API_KEY')
+BLOB_BASE_URL = "https://blob.vercel-storage.com"
+EDGE_CONFIG_ID = "ecfg_y9gdcxqzpzepvvohnzr9kvgdio3j"
 
 WORK_MAP = {
     "lightAmmo": {"quantity": 1, "work": 1},
@@ -217,7 +221,8 @@ def get_user_companies_workers(user_id):
             'country': user['country'],
             'energy': user['skills']['energy'],
             'production': user['skills']['production'],
-            'entrepreneurship': user['skills']['entrepreneurship']
+            'entrepreneurship': user['skills']['entrepreneurship'],
+            'management': user['skills']['management']
         }
         return user_detail, user_companies_workers
     except Exception as e:
@@ -286,7 +291,16 @@ def decision_engine(player_id):
     country_bonus_map = build_country_bonus_map(country_data, user_detail['country'])
 
     user_companies = []
+
     for entry in user_companies_workers['workersPerCompany']:
+        user_workers = []
+        workers = entry['workers']
+
+        for worker in workers:
+            worker_detail, _ = get_user_companies_workers(worker['user'])
+            worker_detail['wage'] = worker.get('wage', 0)
+            user_workers.append(worker_detail)
+
         company_data = get_company_by_id(entry['company']['_id'])
 
         storage_level = company_data['activeUpgradeLevels'].get('storage', 1)
@@ -297,7 +311,7 @@ def decision_engine(player_id):
             'item_code': company_data['itemCode'],
             'automated_engine_level': automated_level,
             'storage_pp': storage_level * 200,
-            'workers': entry['workers']
+            'workers': user_workers
         })
 
     auto_btc = 0
@@ -320,9 +334,68 @@ def decision_engine(player_id):
             'engine_level': c['automated_engine_level']
         })
 
+    employee_breakdown = []
+    employee_total_btc = 0
+    total_wages_per_day = 0
+
+    for c in user_companies:
+        item = c['item_code']
+        if item not in WORK_MAP or item not in market_prices:
+            continue
+
+        work_required = WORK_MAP[item]['work']
+        price = market_prices[item]
+        bonus = country_bonus_map.get(item, 0)
+
+        total_pp = 0
+        total_wages = 0
+        worker_details = []
+
+        for w in c['workers']:
+            energy = w['energy']['total']
+            pp_per_work = w['production']['value']
+            wage = w.get('wage', 0)
+
+            worker_pp = energy * pp_per_work
+            total_pp += worker_pp
+
+            wage_cost = energy * wage
+            total_wages += wage_cost
+            total_wages_per_day += wage_cost
+
+            btc_per_energy = (pp_per_work / work_required) * price * (1 + bonus)
+
+            worker_details.append({
+                'username': w['username'],
+                'energy': energy,
+                'wage': wage,
+                'break_even_wage': round(btc_per_energy, 4),
+                'profit_per_energy': round(btc_per_energy - wage, 4),
+                'daily_wage_cost': round(wage_cost, 2)
+            })
+
+        usable_pp = min(total_pp, c['storage_pp'])
+        units = usable_pp / work_required
+        revenue = units * price * (1 + bonus)
+        net = revenue - total_wages
+
+        employee_total_btc += net
+
+        employee_breakdown.append({
+            'company': c['name'],
+            'item': item,
+            'pp_used': usable_pp,
+            'units_produced': round(units, 2),
+            'revenue': round(revenue, 2),
+            'wages': round(total_wages, 2),
+            'net_btc_per_day': round(net, 2),
+            'workers': worker_details
+        })
+
     summary_blurb = (
-        f"With your current setup, your automated engines are generating roughly "
-        f"{round(auto_btc, 2)} BTC per day in total."
+        f"Automated engines generate ~{round(auto_btc, 2)} BTC/day. "
+        f"Employees generate ~{round(employee_total_btc, 2)} BTC/day after wages. "
+        f"Total wage spend is ~{round(total_wages_per_day, 2)} BTC/day."
     )
 
     best_item = calculate_best_production_efficiency(country_data, market_data)[0]
@@ -347,25 +420,22 @@ def decision_engine(player_id):
             )
             optimal_btc += btc
 
-        if auto_btc > 0:
-            increase_pct = ((optimal_btc - auto_btc) / auto_btc) * 100
-            delta_btc = optimal_btc - auto_btc
-        else:
-            increase_pct = 100
-            delta_btc = optimal_btc
+        increase_pct = ((optimal_btc - auto_btc) / auto_btc * 100) if auto_btc > 0 else 100
+        delta_btc = optimal_btc - auto_btc
 
         optimal_result = {
             "item": optimal_item_code,
             "btc_per_day_if_switched": round(optimal_btc, 2),
             "blurb": (
-                f"You currently do not produce the most optimal resource. "
-                f"By switching the remaining companies, you could increase BTC/day by "
-                f"{round(increase_pct, 2)}%, or ~{round(delta_btc, 2)} BTC more than your current setup."
+                f"Switching production to {optimal_item_code} could increase BTC/day by "
+                f"{round(increase_pct, 2)}%, or ~{round(delta_btc, 2)} BTC."
             )
         }
 
     return {
         "summary": summary_blurb,
         "automation": auto_breakdown,
+        "employees": employee_breakdown,
+        "total_wages_per_day": round(total_wages_per_day, 2),
         "optimal_switch": optimal_result
     }

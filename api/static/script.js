@@ -62,6 +62,7 @@ $(document).on('click', '#getProfileData', function () {
 
     const hexIdRegex = /^[a-fA-F0-9]{24}$/;
     const urlRegex = /([a-fA-F0-9]{24})(?:\/)?$/;
+
     let playerId = null;
 
     if (hexIdRegex.test(value)) {
@@ -87,194 +88,130 @@ $(document).on('click', '#getProfileData', function () {
     $input.css('border-color', '#333').attr('placeholder', originalPlaceholder);
     $button.prop('disabled', true).html('<span class="btn-spinner"></span> Please wait...');
 
+    const $hero = $('.optimal-hero');
+
+    // ---------- TEMPLATES ----------
+    const sectionWrapper = (inner, extraClass = '') => `
+        <div class="dynamic-section ${extraClass}">
+            ${inner}
+        </div>
+    `;
+
+    const sectionTitle = text => `
+        <div class="section-title">${text}</div>
+    `;
+
     fetch(`/get-summary?playerId=${encodeURIComponent(playerId)}`)
         .then(res => res.json())
         .then(data => {
-            const $hero = $('.optimal-hero');
             $hero.find('.dynamic-section').remove();
 
             // ===== SUMMARY =====
             if (data.summary) {
-                const $summaryDiv = $('<div>')
-                    .addClass('dynamic-section')
-                    .css({
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        background: '#000',
-                        border: '1px solid #333',
-                        borderRadius: '8px'
-                    });
-
-                $summaryDiv.append(
-                    $('<div>').css({
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        color: '#666',
-                        marginBottom: '8px',
-                        fontWeight: '600'
-                    }).text('Player Summary'),
-                    $('<div>').css({
-                        color: '#fff',
-                        fontSize: '0.85rem',
-                        lineHeight: '1.5'
-                    }).text(data.summary)
-                );
-
-                $hero.append($summaryDiv);
+                $hero.append(sectionWrapper(`
+                    ${sectionTitle('Player Summary')}
+                    <div class="summary-text">${data.summary}</div>
+                `));
             }
 
-            // ===== AUTOMATION (3 COLUMNS, EACH COLUMN HAS 3 VALUES) =====
+            // ===== AUTOMATION =====
             if (data.automation && data.automation.length) {
-                const $automationDiv = $('<div>')
-                    .addClass('dynamic-section')
-                    .css({
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        background: '#000',
-                        border: '1px solid #333',
-                        borderRadius: '8px'
-                    });
+                const columns = data.automation.map(item => `
+                    <div class="automation-card">
+                        <div>
+                            <div class="automation-label">BTC per day</div>
+                            <div class="automation-value-btc">${item.btc_per_day}</div>
+                        </div>
 
-                $automationDiv.append(
-                    $('<div>').css({
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        color: '#666',
-                        marginBottom: '10px',
-                        fontWeight: '600'
-                    }).text('Automation Data')
-                );
+                        <div>
+                            <div class="automation-label">Company</div>
+                            <div class="automation-value-company">
+                                ${item.company} (level ${item.engine_level})
+                            </div>
+                        </div>
 
-                const $grid = $('<div>').css({
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, 1fr)',
-                    gap: '12px'
-                });
+                        <div>
+                            <div class="automation-label">Resource Produced</div>
+                            <img
+                                src="/static/img/${item.item}.png"
+                                alt="${item.item}"
+                                title="${item.item}"
+                                class="automation-icon"
+                            >
+                        </div>
+                    </div>
+                `).join('');
 
-                data.automation.forEach(item => {
-                    const $column = $('<div>').css({
-                        background: '#0a0a0a',
-                        border: '1px solid #1a1a1a',
-                        borderRadius: '8px',
-                        padding: '10px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px'
-                    });
-
-                    // BTC per day
-                    $column.append(
-                        $('<div>').append(
-                            $('<div>').css({
-                                fontSize: '0.65rem',
-                                color: '#777',
-                                textTransform: 'uppercase'
-                            }).text('BTC per day'),
-                            $('<div>').css({
-                                fontSize: '0.95rem',
-                                fontWeight: '700',
-                                color: '#facc15'
-                            }).text(item.btc_per_day)
-                        )
-                    );
-
-                    // Company
-                    $column.append(
-                        $('<div>').append(
-                            $('<div>').css({
-                                fontSize: '0.65rem',
-                                color: '#777',
-                                textTransform: 'uppercase'
-                            }).text('Company'),
-                            $('<div>').css({
-                                fontSize: '0.85rem',
-                                fontWeight: '600',
-                                color: '#fff'
-                            }).text(item.company+ " (level "+item.engine_level+")")
-                        )
-                    );
-
-                const iconPath = `/static/img/${item.item}.png`;
-
-                $column.append(
-                    $('<div>').append(
-                        $('<div>').css({
-                            fontSize: '0.65rem',
-                            color: '#777',
-                            textTransform: 'uppercase'
-                        }).text('Resource Produced'),
-
-                        $('<img>', {
-                            src: iconPath,
-                            alt: item.item,
-                            title: item.item
-                        }).css({
-                            width: '32px',
-                            height: '32px',
-                            marginBottom: '4px'
-                        }),
-
-                        
-                    )
-                );
-
-                    $grid.append($column);
-                });
-
-                $automationDiv.append($grid);
-                $hero.append($automationDiv);
+                $hero.append(sectionWrapper(`
+                    ${sectionTitle('Automation Data')}
+                    <div class="automation-grid">${columns}</div>
+                `));
             }
 
-            if (data.optimal_switch !== undefined && data.optimal_switch !== null) {
-                const $switchDiv = $('<div>')
-                    .addClass('dynamic-section')
-                    .css({
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        background: '#000',
-                        border: '1px solid #333',
-                        borderRadius: '8px',
-                        textAlign: 'center'
+            // ===== EMPLOYEES =====
+            if (data.employees && data.employees.length) {
+                const cards = [];
+
+                data.employees.forEach(company => {
+                    company.workers.forEach(worker => {
+                        const profitClass =
+                            worker.profit_per_energy >= 0 ? 'positive' : 'negative';
+
+                        cards.push(`
+                            <div class="employee-card">
+                                <div class="employee-name">${worker.username}</div>
+                                <div class="employee-company">
+                                    ${company.company} • <img
+                                src="/static/img/${company.item}.png"
+                                alt="${company.item}"
+                                title="${company.item}"
+                                class="automation-icon"
+                            >
+                                </div>
+                                <div class="employee-energy">Energy: ${worker.energy}</div>
+                                <div class="employee-wage">
+                                    Current Wage: <strong>${worker.wage}</strong><br>
+                                    Wage for Break-even: <strong>${worker.break_even_wage}</strong>
+                                </div>
+                                <div class="employee-profit ${profitClass}">
+                                    Profit / Energy: ${worker.profit_per_energy}
+                                </div>
+                                <div class="employee-daily-cost">
+                                    Daily Wage Cost: ${worker.daily_wage_cost}
+                                </div>
+                            </div>
+                        `);
                     });
+                });
 
-                $switchDiv.append(
-                    $('<div>').css({
-                        fontSize: '0.7rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        color: '#666',
-                        marginBottom: '6px',
-                        fontWeight: '600'
-                    }).text('Recommendation'),
-                    $('<div>').css({
-                        fontSize: '1.25rem',
-                        fontWeight: '700',
-                        color: '#fff'
-                    }).text(data.optimal_switch.blurb + " You're missing out on a potential " +data.optimal_switch.btc_per_day_if_switched + " BTC per day")
-                );
+            $hero.append(sectionWrapper(`
+                ${sectionTitle('Employee Breakdown')}
+                <div class="employee-grid-wrapper">
+                    <div class="employee-grid">${cards.join('')}</div>
+                </div>
+            `));
+            }
 
-                $hero.append($switchDiv);
+            // ===== RECOMMENDATION =====
+            if (data.optimal_switch) {
+                $hero.append(sectionWrapper(`
+                    ${sectionTitle('Recommendation')}
+                    <div class="recommendation-text">
+                        ${data.optimal_switch.blurb}
+                        You're missing out on a potential
+                        ${data.optimal_switch.btc_per_day_if_switched}
+                        BTC per day
+                    </div>
+                `, 'centered'));
             }
         })
         .catch(() => {
-            $('.optimal-hero').find('.dynamic-section').remove();
-            $('.optimal-hero').append(
-                $('<div>')
-                    .addClass('dynamic-section')
-                    .css({
-                        marginTop: '16px',
-                        padding: '12px 16px',
-                        background: '#000',
-                        border: '1px solid #f87171',
-                        borderRadius: '8px',
-                        color: '#f87171',
-                        textAlign: 'center',
-                        fontSize: '0.85rem'
-                    })
-                    .text('Failed to fetch player data. Please try again.')
-            );
+            $hero.find('.dynamic-section').remove();
+            $hero.append(`
+                <div class="dynamic-section error">
+                    Failed to fetch player data. Please try again.
+                </div>
+            `);
         })
         .finally(() => {
             $button.prop('disabled', false).text(buttonText);

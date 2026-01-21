@@ -1,9 +1,5 @@
 from flask import Flask, abort, jsonify, request, render_template
 from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine
-import time
-import os
-import json
-import logging
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -50,10 +46,3 @@ def get_summary():
     player_id = request.args.get('playerId')
     result = decision_engine(player_id)
     return jsonify(result)
-
-@app.route("/admin/refresh", methods=["GET"])
-def refresh_top_players():
-    logging.info("Cron refresh ran")
-    print("Looks like it works! Yay")
-    return jsonify({'success': True})
-

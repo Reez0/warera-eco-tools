@@ -62,6 +62,7 @@
 
         <div class="optimal-hero">
             <div class="optimal-label">💎 Most optimal resource</div>
+            <small style="letter-spacing: 0.1em;color: #666;">* This is algorithmically biased. Ensure that your production is in line with your personal goals and wealth strategy.</small>
             <div class="optimal-resource-name">
                 <img
                     src="{{ url_for('static', filename=item_icons[production_efficiency[0].item]) }}"
@@ -72,11 +73,12 @@
             </div>
             <div class="optimal-profit">Expected Profit: {{ production_efficiency[0].profit_per_hour }}/hour</div>
             <div class="optimal-details">{{ production_efficiency[0].result }}</div>
-            <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
             <div class="optimal-input-group">  
             <button class="btn-soft" id="openInfoDialog">How is this possible?</button>
             </div>  
-            <div class="optimal-label">⚙️ Calculate your automated engine output</div>
+            <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
+
+            <div class="optimal-label">⚙️ Calculate your automated engine and worker output</div>
             <div class="optimal-input-group">
                 <input type="text" class="optimal-input" placeholder="Enter a player id or warera player profile url" id="playerInput">
                 <button id="getProfileData" class="btn-soft">Get profile data</button>

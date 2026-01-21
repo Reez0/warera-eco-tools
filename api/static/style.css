@@ -547,3 +547,159 @@
                 padding: 32px 24px;
             }
         }
+
+/* ===== Shared Section Wrapper ===== */
+.dynamic-section {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #000;
+    border: 1px solid #333;
+    border-radius: 8px;
+}
+
+/* Error state */
+.dynamic-section.error {
+    border: 1px solid #f87171;
+    color: #f87171;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+/* Centered section */
+.dynamic-section.centered {
+    text-align: center;
+}
+
+/* ===== Section Titles ===== */
+.section-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #666;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* ===== Summary ===== */
+.summary-text {
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+/* ===== Automation ===== */
+.automation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.automation-card {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.automation-label {
+    font-size: 0.65rem;
+    color: #777;
+    text-transform: uppercase;
+}
+
+.automation-value-btc {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #facc15;
+}
+
+.automation-value-company {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.automation-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 4px;
+}
+
+/* ===== Employees ===== */
+.employee-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.employee-card {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.employee-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.employee-company {
+    display: flex;
+    font-size: 0.7rem;
+    color: #777;
+}
+
+.employee-energy,
+.employee-wage {
+    font-size: 0.75rem;
+    color: #ccc;
+}
+
+.employee-profit {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.employee-profit.positive {
+    color: #4ade80;
+}
+
+.employee-profit.negative {
+    color: #f87171;
+}
+
+.employee-daily-cost {
+    font-size: 0.7rem;
+    color: #777;
+}
+
+/* ===== Recommendation ===== */
+.recommendation-text {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .employee-grid-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch; 
+        padding-bottom: 8px;
+        max-height: 350px;
+    }
+
+    .employee-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+        width: max-content;
+    }
+}
