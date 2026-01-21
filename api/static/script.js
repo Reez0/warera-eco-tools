@@ -149,7 +149,7 @@ $(document).on('click', '#getProfileData', function () {
             }
 
             // ===== EMPLOYEES =====
-            if (data.employees && data.employees.length) {
+            if (data.employees && data.employees.length > 1) {
                 const cards = [];
 
                 data.employees.forEach(company => {
