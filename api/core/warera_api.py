@@ -29,6 +29,10 @@ WORK_MAP = {
     "lead": {"quantity":1, "work":1}
 }
 
+ENERGY_REGEN_RATE = 0.10
+HOURS_PER_DAY = 16
+ENERGY_PER_WORK = 10
+
 def get_market_data():
     try:
         payloads = [
@@ -222,7 +226,8 @@ def get_user_companies_workers(user_id):
             'energy': user['skills']['energy'],
             'production': user['skills']['production'],
             'entrepreneurship': user['skills']['entrepreneurship'],
-            'management': user['skills']['management']
+            'management': user['skills']['management'],
+            'last_work_time': user['dates']['lastWorkAt']
         }
         return user_detail, user_companies_workers
     except Exception as e:
@@ -283,7 +288,7 @@ def automation_btc_per_day(engine_level, storage_pp, item_code, market_prices, c
     return units_per_day * price * (1 + bonus)
 
 
-def decision_engine(player_id):
+def decision_engine(player_id, awake_hours=16):
     user_detail, user_companies_workers = get_user_companies_workers(player_id)
     country_data, market_data, _ = gather_data()
 
@@ -294,9 +299,7 @@ def decision_engine(player_id):
 
     for entry in user_companies_workers['workersPerCompany']:
         user_workers = []
-        workers = entry['workers']
-
-        for worker in workers:
+        for worker in entry['workers']:
             worker_detail, _ = get_user_companies_workers(worker['user'])
             worker_detail['wage'] = worker.get('wage', 0)
             user_workers.append(worker_detail)
@@ -316,7 +319,6 @@ def decision_engine(player_id):
 
     auto_btc = 0
     auto_breakdown = []
-
     for c in user_companies:
         btc = automation_btc_per_day(
             c['automated_engine_level'],
@@ -325,7 +327,6 @@ def decision_engine(player_id):
             market_prices,
             country_bonus_map
         )
-
         auto_btc += btc
         auto_breakdown.append({
             'company': c['name'],
@@ -352,26 +353,34 @@ def decision_engine(player_id):
         worker_details = []
 
         for w in c['workers']:
-            energy = w['energy']['total']
+            starting_energy = w['energy']['total']
+            max_energy = w['energy']['total']
             pp_per_work = w['production']['value']
             wage = w.get('wage', 0)
 
-            worker_pp = energy * pp_per_work
+            daily_energy = starting_energy + (max_energy * ENERGY_REGEN_RATE * awake_hours)
+            daily_work = daily_energy // ENERGY_PER_WORK
+
+            worker_pp = daily_work * pp_per_work
             total_pp += worker_pp
 
-            wage_cost = energy * wage
+            wage_cost = daily_work * wage * pp_per_work
             total_wages += wage_cost
             total_wages_per_day += wage_cost
 
-            btc_per_energy = (pp_per_work / work_required) * price * (1 + bonus)
+            btc_per_work = (pp_per_work / work_required) * price * (1 + bonus)
+            worker_revenue = daily_work * btc_per_work
 
             worker_details.append({
                 'username': w['username'],
-                'energy': energy,
-                'wage': wage,
-                'break_even_wage': round(btc_per_energy, 4),
-                'profit_per_energy': round(btc_per_energy - wage, 4),
-                'daily_wage_cost': round(wage_cost, 2)
+                'revenue_per_day': round(worker_revenue, 2),
+                'daily_wage_cost': round(wage_cost, 2),
+                'break_even_wage': round(btc_per_work, 4),
+                'current_wage': wage,
+                'energy': max_energy,
+                'production': pp_per_work,
+                'daily_work': int(daily_work),
+                'last_work_time': w['last_work_time'][:16].replace("T"," ")
             })
 
         usable_pp = min(total_pp, c['storage_pp'])
@@ -384,7 +393,7 @@ def decision_engine(player_id):
         employee_breakdown.append({
             'company': c['name'],
             'item': item,
-            'pp_used': usable_pp,
+            'pp_used': round(usable_pp, 2),
             'units_produced': round(units, 2),
             'revenue': round(revenue, 2),
             'wages': round(total_wages, 2),
@@ -397,7 +406,7 @@ def decision_engine(player_id):
         f"Employees generate ~{round(employee_total_btc, 2)} BTC/day after wages. "
         f"Total wage spend is ~{round(total_wages_per_day, 2)} BTC/day."
     )
-
+    
     best_item = calculate_best_production_efficiency(country_data, market_data)[0]
     optimal_item_code = best_item['item']
 
@@ -431,7 +440,6 @@ def decision_engine(player_id):
                 f"{round(increase_pct, 2)}%, or ~{round(delta_btc, 2)} BTC."
             )
         }
-
     return {
         "summary": summary_blurb,
         "automation": auto_breakdown,

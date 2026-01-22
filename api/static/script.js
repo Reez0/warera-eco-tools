@@ -149,48 +149,97 @@ $(document).on('click', '#getProfileData', function () {
             }
 
             // ===== EMPLOYEES =====
-            if (data.employees && data.employees.length > 1) {
+            if (data.employees && data.employees.some(c => c.workers && c.workers.length > 0)) {
                 const cards = [];
 
-                data.employees.forEach(company => {
-                    company.workers.forEach(worker => {
-                        const profitClass =
-                            worker.profit_per_energy >= 0 ? 'positive' : 'negative';
+                // Only include companies that have workers
+                data.employees
+                    .filter(company => company.workers && company.workers.length > 0)
+                    .forEach(company => {
+                        const companyProfitClass = company.net_btc_per_day >= 0 ? 'profit' : 'loss';
+                        const redGreenClass = company.net_btc_per_day >= 0 ? 'green' : 'red';
 
                         cards.push(`
-                            <div class="employee-card">
-                                <div class="employee-name">${worker.username}</div>
-                                <div class="employee-company">
-                                    ${company.company} • <img
-                                src="/static/img/${company.item}.png"
-                                alt="${company.item}"
-                                title="${company.item}"
-                                class="automation-icon"
-                            >
+                            <div class="company-card ${companyProfitClass}">
+                                <div class="company-header">
+                                    <strong>${company.company}</strong> • 
+                                    <img src="/static/img/${company.item}.png" alt="${company.item}" title="${company.item}" class="automation-icon">
                                 </div>
-                                <div class="employee-energy">Energy: ${worker.energy}</div>
-                                <div class="employee-wage">
-                                    Current Wage: <strong>${worker.wage}</strong><br>
-                                    Wage for Break-even: <strong>${worker.break_even_wage}</strong>
+                                <div class="company-totals">
+                                    <span>Revenue: <strong>${company.revenue}</strong> BTC</span>
+                                    <span>Wages Paid: <strong>${company.wages}</strong> BTC</span>
+                                    <span>Net BTC/Day: <strong class="${redGreenClass}">${company.net_btc_per_day}</strong> BTC</span>
                                 </div>
-                                <div class="employee-profit ${profitClass}">
-                                    Profit / Energy: ${worker.profit_per_energy}
-                                </div>
-                                <div class="employee-daily-cost">
-                                    Daily Wage Cost: ${worker.daily_wage_cost}
+                                <div class="workers-section">
+                                    ${company.workers.map(worker => `
+                                        <div class="employee-card">
+                                            <div class="employee-name">${worker.username}</div>
+                                            <div>
+                                            ⚡ ${worker.energy} 
+                                            ⛏️ ${worker.production} 
+                                            Daily Work: ~${worker.daily_work} *
+                                            </div>
+                                            <div class="revenue"> 
+                                                <div class="revenue-item">
+                                                    <p>Daily Revenue: </p>
+                                                    <p><strong>${worker.revenue_per_day}</strong> BTC</p>
+                                                </div>
+                                                <div class="revenue-item">
+                                                    <p>Daily Wage: </p>
+                                                    <p><strong>${worker.daily_wage_cost}</strong> BTC</p>
+                                                </div>
+                                                <div class="revenue-item">
+                                                    <p>Current Wage: </p>
+                                                    <p><strong>${worker.current_wage}</strong></p>
+                                                </div>
+                                                <div class="revenue-item">
+                                                    <p>Break-even: </p>
+                                                    <p><strong>${worker.break_even_wage}</strong></p>
+                                                </div>
+                                                 <div class="revenue-item">
+                                                    <p>Last work: </p>
+                                                    <p><strong>${worker.last_work_time} UTC</strong></p>
+                                                </div>
+                                            </div>
+ 
+                                        </div>
+                                    `).join('')}
                                 </div>
                             </div>
                         `);
                     });
-                });
 
-            $hero.append(sectionWrapper(`
-                ${sectionTitle('Employee Breakdown')}
-                <div class="employee-grid-wrapper">
-                    <div class="employee-grid">${cards.join('')}</div>
-                </div>
-            `));
+                if (cards.length > 0) {
+                    $hero.append(sectionWrapper(`
+                        ${sectionTitle('Employee Breakdown')}
+                        <div class="employee-grid-wrapper">
+                            <div class="employee-grid">${cards.join('')}</div>
+                        </div>
+                    `));
+                    $hero.append(`
+                        <small class="small-text">* We assume the worker starts the day with a full energy bar and uses energy consistently throughout the day whenever possible.
+
+                            Energy regenerates at a constant hourly rate.
+
+                            Each work action costs 10 energy.
+
+                            Whenever the worker reaches >=10 energy, they immediately perform work.
+
+                            For example:
+
+                            A worker with 30 max energy, 10 production, and 0.089 wage earns
+                            0.089 * 10 = 0.89 BTC per work
+
+                            Over a normal day, energy regeneration plus starting energy allows multiple work actions.
+
+                            Any leftover energy below 10 is carried forward and contributes to future work.
+
+                            This model estimates average daily output, not exact click timing.
+                        </small>
+                        `)
+                }
             }
+
 
             // ===== RECOMMENDATION =====
             if (data.optimal_switch) {
