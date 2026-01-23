@@ -1,6 +1,7 @@
 import requests
 import os
 from collections import Counter
+from pymongo import MongoClient, ASCENDING
 import json
 from datetime import datetime, timezone
 
@@ -447,3 +448,51 @@ def decision_engine(player_id, awake_hours=16):
         "total_wages_per_day": round(total_wages_per_day, 2),
         "optimal_switch": optimal_result
     }
+    
+def store_daily_market_snapshot(market_data):
+    uri = (
+        f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+        f"{os.environ['MONGO_DB_PASSWORD']}"
+        "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+    )
+
+    client = MongoClient(uri)
+    db = client["warera_market"]
+    collection = db["market_data"]    
+
+    collection.create_index(
+        [("itemCode", ASCENDING), ("day", ASCENDING)],
+        unique=True
+    )
+
+    collection.create_index(
+        [("day", ASCENDING)]
+    )
+
+    now = datetime.now(timezone.utc)
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    documents = []
+
+    for entry in market_data:
+        buy = entry["top_buy_order"]
+        sell = entry["top_sell_order"]
+
+        documents.append({
+            "itemCode": buy["itemCode"],
+            "day": day,
+            "bid": buy["price"],
+            "ask": sell["price"],
+            "bidQty": buy["quantity"],
+            "askQty": sell["quantity"],
+            "createdAt": now
+        })
+
+    try:
+        collection.insert_many(documents, ordered=False)
+    except Exception as e:
+        if "E11000" not in str(e):
+            raise
+
+    finally:
+        client.close()
