@@ -91,7 +91,6 @@
 
         <div class="countries-section">
             <h2>Countries <small>Click row to view</small></h2>
-            <p class="section-note">Deposit bonuses are not accounted for</p>
             <table id="countryTable" class="display nowrap">
                 <thead>
                     <tr>
@@ -100,12 +99,12 @@
                         <th>Income Tax (%)</th>
                         <th>Production Bonus (%)</th>
                         <th>Found Deposit</th>
-                        <th>Time Remaining</th>
+                        <th>Max possible Production Bonus</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for country in data %}
-                    <tr onclick="window.open('https://app.warera.io/country/{{ country.country_id }}', '_blank').focus();">
+                    <tr class="{{'max-bonus' if country.max_bonus_applies.value}}" onclick="window.open('https://app.warera.io/country/{{ country.country_id }}', '_blank').focus();">
                         <td>{{ country.name }}</td>
                         <td>
                             <img
@@ -117,21 +116,27 @@
                         <td>{{ country.taxes.income }}%</td>
                         <td>{{ country.production_bonus }}%</td>
                         <td>
-                            {% if country.deposit_type %}
+                            {%if country.deposits%}
+                            {% set max_deposits = 5 %}
+                            {% for deposit in country.deposits[:max_deposits] %}
                                 <img
-                                    src="{{ url_for('static', filename=item_icons[country.deposit_type]) }}"
-                                    alt="{{ country.deposit_type }}"
-                                    title="{{ country.deposit_type }}"
+                                    src="{{ url_for('static', filename=item_icons[deposit.deposit_type]) }}"
+                                    alt="{{ deposit.deposit_type }}"
+                                    title="{{ deposit.deposit_type }}"
                                 >
+                            {%endfor%}
+                            {% if country.deposits|length > max_deposits %}
+                                <small style="font-style: italic;">and {{ country.deposits|length - max_deposits }} others</small>
+                            {% endif %}
                             {% else %}
                                 No deposit found
                             {% endif %}
                         </td>
                         <td>
-                            {% if country.deposit_time_remaining %}
-                                {{ country.deposit_time_remaining }}
+                            {% if country.max_bonus_applies.value %}
+                                {{ country.max_bonus_applies.value }}%
                             {% else %}
-                                N/A
+                                30%
                             {% endif %}
                         </td>
                     </tr>

@@ -820,3 +820,7 @@
 .small-text {
     font-size: 0.6rem;
 }
+
+.max-bonus {
+    background-color: #4ade8047 !important;
+}

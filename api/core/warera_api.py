@@ -62,6 +62,28 @@ def get_market_data():
         return all_market_data
     except Exception as e:
         raise Exception(f'Unable to retrieve country information {e}')
+    
+def get_events():
+    try:
+        url = """https://api2.warera.io/trpc/event.getEventsPaginated?batch=1&input={"0":{"limit":16,"eventTypes":["depositDiscovered"],"direction":"forward"}}"""
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        event_data = response.json()[0]['result']['data']['items']
+        filtered = []
+        for event in event_data:
+            micro_map_data = {}
+            for country in event['countries']:
+                micro_map_data['region_name'] = event['data']['region']
+                micro_map_data['deposit_type'] = event['data']['itemCode']
+                micro_map_data['deposit_time_remaining'] = event['data']['durationDays']
+                micro_map_data['country_id'] = country
+                filtered.append(micro_map_data)
+        return filtered
+    except Exception as e:
+        raise Exception(f'Unable to retrieve country information {e}')
 
 def get_map_data():
     try:
@@ -129,18 +151,25 @@ def get_country_information():
     except Exception as e:
         raise Exception(f'Unable to retrieve country information {e}')
 
-    
 def gather_data():
     try:
         map_data = get_map_data()
         country_data = get_country_information()
+    
         for i in country_data:
+            i['deposits'] = []
+            i['max_bonus_applies'] = {'value': None}
             for j in map_data:
-                if i['country_id'] == j['country_id']:
-                    i.update(j)
+                if i['code'] == j['code']:
+                    i['deposits'].append(j)
+            if i['deposits']:
+                for deposit in i['deposits']:
+                    if deposit['deposit_type'] == i['specialization']:
+                        i['max_bonus_applies'] = {'value': int(i['production_bonus']) + 30}
+                          
         count_deposits = dict(Counter(k['deposit_type'] for k in map_data if k.get('deposit_type')).most_common())
         market_data = get_market_data()
-        return country_data, market_data,count_deposits
+        return country_data, market_data, count_deposits
     except Exception as e:
         raise Exception(f'Unable to retrieve data from warera API {e}')
     
