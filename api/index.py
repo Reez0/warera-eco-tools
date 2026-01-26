@@ -1,5 +1,5 @@
 from flask import Flask, abort, jsonify, request, render_template
-from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine, store_daily_market_snapshot
+from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine, store_snapshots
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -36,7 +36,7 @@ def home():
             'production_efficiency':production_efficiency,
             'item_icons':ITEM_ICONS
         }
-        store_daily_market_snapshot(market_data)
+        store_snapshots(market_data)
         return render_template("index.html",**context)
     except:
         raise

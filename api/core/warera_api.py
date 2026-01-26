@@ -84,6 +84,19 @@ def get_events():
         return filtered
     except Exception as e:
         raise Exception(f'Unable to retrieve country information {e}')
+    
+def get_wage_stats():
+    try:
+        url = """https://api2.warera.io/trpc//trpc/workOffer.getWageStats,worker.getWorkers?batch=1&input={"0":{},"1":{"companyId":"6937d8cd98e203f35a31b063"}}"""
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        wage_data = response.json()[0]['result']['data']
+        return wage_data
+    except Exception as e:
+        raise Exception(f'Unable to retrieve wage information {e}')
 
 def get_map_data():
     try:
@@ -166,7 +179,7 @@ def gather_data():
                 for deposit in i['deposits']:
                     if deposit['deposit_type'] == i['specialization']:
                         i['max_bonus_applies'] = {'value': int(i['production_bonus']) + 30}
-                          
+
         count_deposits = dict(Counter(k['deposit_type'] for k in map_data if k.get('deposit_type')).most_common())
         market_data = get_market_data()
         return country_data, market_data, count_deposits
@@ -477,6 +490,53 @@ def decision_engine(player_id, awake_hours=16):
         "total_wages_per_day": round(total_wages_per_day, 2),
         "optimal_switch": optimal_result
     }
+
+def store_daily_wage_snapshot():
+    wage_data = get_wage_stats()
+    uri = (
+        f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+        f"{os.environ['MONGO_DB_PASSWORD']}"
+        "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+    )
+
+    client = MongoClient(uri)
+    db = client["warera_market"]
+    collection = db["wage_data"]    
+
+    collection.create_index(
+        [("day", ASCENDING)],
+        unique=True
+    )
+
+    now = datetime.now(timezone.utc)
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    document = {
+        "day": day,
+        "allowedMin": wage_data["allowedRange"]["min"],
+        "allowedMax": wage_data["allowedRange"]["max"],
+        "allowedAvg": wage_data["allowedRange"]["average"],
+        "topOffer": wage_data.get("topOffer"),
+        "topEligibleOffer": wage_data.get("topEligibleOffer"),
+        "eligibleWages": [
+            offer["wage"]
+            for offer in wage_data.get("topEligibleOffers", [])
+        ],
+        "createdAt": now
+    }
+
+    try:
+        collection.insert_one(document)
+    except Exception as e:
+        if "E11000" not in str(e):
+            raise
+
+    finally:
+        client.close()
+
+def store_snapshots(market_data):
+    store_daily_market_snapshot(market_data)
+    store_daily_wage_snapshot()
     
 def store_daily_market_snapshot(market_data):
     uri = (
