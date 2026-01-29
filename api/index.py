@@ -1,7 +1,7 @@
 from threading import Lock
 
 from flask import Flask, abort, jsonify, request, render_template
-from .core.eco_tools import gather_data, store_snapshots, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser
+from .core.eco_tools import gather_data, store_snapshots, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot
 from .core.warera_api import get_item_trading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -42,7 +42,7 @@ def home():
             'winner': winner,
             'loser': loser
         }
-
+        store_daily_wage_snapshot()
         return render_template("index.html",**context)
     except Exception as e:
         log_exception(
