@@ -1133,6 +1133,6 @@ tr.max-bonus td {
 .red-border {
     border-width: 2px;
     border-style: solid;
-    animation: jiggle-pause 2s ease-in-out infinite;
+    animation: jiggle-pause 5s ease-in-out infinite;
 }
 
