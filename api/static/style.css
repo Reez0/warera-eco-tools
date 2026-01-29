@@ -821,6 +821,318 @@
     font-size: 0.6rem;
 }
 
-.max-bonus {
-    background-color: #4ade8047 !important;
+
+@keyframes pulse-green-slow {
+    /* stay transparent */
+    0% {
+        background-color: #6ade4a00;
+    }
+    30% {
+        background-color: #6ade4a00;
+    }
+
+    /* fade in */
+    50% {
+        background-color: #6ade4a61;
+    }
+
+    /* hold visible */
+    70% {
+        background-color: #6ade4a61;
+    }
+
+    /* fade out */
+    100% {
+        background-color: #6ade4a00;
+    }
 }
+
+tr.max-bonus td {
+    animation: pulse-green-slow 12s ease-in-out infinite;
+}
+
+
+
+/* Market Trends Section */
+.market-trends-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+}
+
+.market-trends-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.market-trends-grid::-webkit-scrollbar-track {
+    background: #0a0a0a;
+    border-radius: 3px;
+}
+
+.market-trends-grid::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 3px;
+}
+
+.market-trends-grid::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+.market-card {
+    background: #000;
+    border: 1px solid #222;
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.3s ease;
+}
+
+.market-card:hover {
+    border-color: #444;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+}
+
+.market-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.market-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.market-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.market-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.market-stat-label {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.market-stat-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+@media (max-width: 768px) {
+    .market-trends-grid {
+        grid-template-columns: repeat(2, 1fr);
+        max-height: 400px;
+    }
+
+    .market-stat-value {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #fff;
+}
+}
+
+@media (max-width: 480px) {
+    .market-trends-grid {
+        grid-template-columns: 1fr;
+        max-height: 350px;
+    }
+    .market-stat-value {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #fff;
+}
+}
+
+/* Input error */
+.input-error {
+    border-color: #f87171 !important;
+}
+
+/* Buttons */
+.btn-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Dynamic Sections */
+.dynamic-section {
+    margin-bottom: 24px;
+}
+.dynamic-section.centered {
+    text-align: center;
+}
+.dynamic-section.error {
+    color: #f87171;
+}
+
+/* Section Titles */
+.section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.section-title.workers-title {
+    margin-top: 16px;
+}
+
+/* Company Cards */
+.company-card {
+    border: 1px solid #1a1a1a;
+    padding: 12px;
+    margin-bottom: 16px;
+    background: #111;
+}
+.company-card.profit strong { color: #4ade80; }
+.company-card.loss strong { color: #f87171; }
+
+.company-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.company-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.company-icon-mini {
+    width:10px;
+}
+
+.company-totals {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+.company-totals span strong.green { color: #4ade80; }
+.company-totals span strong.red { color: #f87171; }
+
+/* Grid Layouts */
+.company-stats-grid.two-columns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #1a1a1a;
+}
+.company-stats-grid.three-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    font-size: 0.7rem;
+    color: #666;
+}
+
+.stat-column { font-size: 0.7rem; color: #666; }
+.stat-label { margin-bottom: 8px; }
+.stat-detail { color: #888; font-size: 0.65rem; }
+.stat-total { color: #fff; font-size: 0.7rem; margin-top: 4px; }
+
+.stat-value { color: #fff; font-weight: 600; font-size: 0.75rem; margin-top: 4px; }
+
+/* Employee Cards */
+.employee-card {
+    background: #1a1a1a;
+    padding: 8px;
+    margin-bottom: 8px;
+}
+.employee-name { font-weight: 600; margin-bottom: 4px; }
+.employee-stats {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #1a1a1a;
+}
+.stats-title {
+    font-size: 0.65rem;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+/* Workers Section */
+.workers-section { margin-top: 8px; }
+
+/* Summary Grid */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.summary-card { text-align: center; }
+.summary-label {
+    font-size: 0.7rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+.summary-value.green { color: #4ade80; }
+.summary-value.red { color: #f87171; }
+.summary-subvalue { font-size: 0.65rem; color: #666; margin-top: 2px; }
+
+.company-header-name {
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.green-border {
+    border-color: #4ade80;
+}
+
+.red-border {
+    border-color: #f87171;
+}
+
+@keyframes jiggle-pause {
+    0%   { transform: translateX(0); }
+    5%   { transform: translateX(-6px); }
+    10%  { transform: translateX(6px); }
+    15%  { transform: translateX(-5px); }
+    20%  { transform: translateX(5px); }
+    25%  { transform: translateX(-3px); }
+    30%  { transform: translateX(3px); }
+    35%  { transform: translateX(0); }
+
+    100% { transform: translateX(0); }
+}
+
+.green-border,
+.red-border {
+    border-width: 2px;
+    border-style: solid;
+    animation: jiggle-pause 2s ease-in-out infinite;
+}
+

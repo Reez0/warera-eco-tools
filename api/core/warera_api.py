@@ -3,11 +3,10 @@ import os
 from collections import Counter
 from pymongo import MongoClient, ASCENDING
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from .logger import log_exception
 
 API_KEY = os.getenv('API_KEY')
-BLOB_BASE_URL = "https://blob.vercel-storage.com"
-EDGE_CONFIG_ID = "ecfg_y9gdcxqzpzepvvohnzr9kvgdio3j"
 
 WORK_MAP = {
     "lightAmmo": {"quantity": 1, "work": 1},
@@ -29,10 +28,6 @@ WORK_MAP = {
     "cocain":{"quantity":200, "work":200},
     "lead": {"quantity":1, "work":1}
 }
-
-ENERGY_REGEN_RATE = 0.10
-HOURS_PER_DAY = 16
-ENERGY_PER_WORK = 10
 
 def get_market_data():
     try:
@@ -61,6 +56,11 @@ def get_market_data():
                 all_market_data.append(data)
         return all_market_data
     except Exception as e:
+        log_exception(
+            e,
+            function="get_market_data",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve country information {e}')
     
 def get_events():
@@ -83,6 +83,11 @@ def get_events():
                 filtered.append(micro_map_data)
         return filtered
     except Exception as e:
+        log_exception(
+            e,
+            function="get_events",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve country information {e}')
     
 def get_wage_stats():
@@ -96,6 +101,11 @@ def get_wage_stats():
         wage_data = response.json()[0]['result']['data']
         return wage_data
     except Exception as e:
+        log_exception(
+            e,
+            function="get_wage_stats",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve wage information {e}')
 
 def get_map_data():
@@ -122,6 +132,11 @@ def get_map_data():
         region_data = get_region_data(filtered)
         return region_data
     except Exception as e:
+        log_exception(
+            e,
+            function="get_map_data",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve country information {e}')
 
 def get_region_data(filtered_map_data):
@@ -139,6 +154,30 @@ def get_region_data(filtered_map_data):
              
         return filtered_map_data
     except Exception as e:
+        log_exception(
+            e,
+            function="get_region_data",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve region information {e}')
+    
+def get_region_data_raw():
+    try:
+        url = """https://api2.warera.io/trpc/region.getRegionsObject"""
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        region_data = response.json()['result']['data']
+             
+        return region_data
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_region_data_raw",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve region information {e}')    
 
 def get_country_information():
@@ -162,87 +201,13 @@ def get_country_information():
             filtered.append(micro_country_data)
         return filtered
     except Exception as e:
+        log_exception(
+            e,
+            function="get_country_information",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve country information {e}')
 
-def gather_data():
-    try:
-        map_data = get_map_data()
-        country_data = get_country_information()
-    
-        for i in country_data:
-            i['deposits'] = []
-            i['max_bonus_applies'] = {'value': None}
-            for j in map_data:
-                if i['code'] == j['code']:
-                    i['deposits'].append(j)
-            if i['deposits']:
-                for deposit in i['deposits']:
-                    if deposit['deposit_type'] == i['specialization']:
-                        i['max_bonus_applies'] = {'value': int(i['production_bonus']) + 30}
-
-        count_deposits = dict(Counter(k['deposit_type'] for k in map_data if k.get('deposit_type')).most_common())
-        market_data = get_market_data()
-        return country_data, market_data, count_deposits
-    except Exception as e:
-        raise Exception(f'Unable to retrieve data from warera API {e}')
-    
-def calculate_best_production_efficiency(country_data, market_data):
-    # Build items with WORK_MAP
-    items = {}
-    for i in market_data:
-        item_code = i['top_buy_order']['itemCode']
-        base = WORK_MAP[item_code].copy()
-        base['sell'] = i['top_sell_order']['price']
-        base['raw_cost'] = 0  # producing in own company
-        items[item_code] = base
-
-    # Build country info
-    countries = {}
-    for i in country_data:
-        countries[i['name']] = {
-            'special': i['specialization'],
-            'bonus': i['production_bonus']  
-        }
-
-    entrepreneurship_per_hour = 10
-
-    def profit_per_hour_normalized(item_name, item_data, country_data):
-        sell = item_data["sell"]
-        work = item_data["work"]
-
-        bonus_applies = (
-            item_name == country_data["special"] or
-            (item_name == "ammo" and country_data["special"] == "ammo")
-        )
-
-        bonus_multiplier = 1 + (country_data["bonus"] / 100) if bonus_applies else 1
-        btc_per_pp = (sell * bonus_multiplier) / work
-        profit_per_hour = btc_per_pp * entrepreneurship_per_hour
-        explanation = (
-            f"Current selling price={sell}, Required PP={work}, "
-            f"bonus={'yes' if bonus_applies else 'no'} ({country_data['bonus']}%), "
-            f"BTC/PP={btc_per_pp:.4f}"
-        )
-
-        return profit_per_hour, explanation
-
-    results = []
-    for country_name, country_data_item in countries.items():
-        for item_name, item_data in items.items():
-            profit, explanation = profit_per_hour_normalized(item_name, item_data, country_data_item)
-            results.append({
-                "country": country_name,
-                "item": item_name,
-                "profit_per_hour": round(profit, 3),
-                "result": explanation
-            })
-    for i in results:
-        for j in country_data:
-            if i['country'] == j['name']:
-                i['country_id'] = j['country_id']
-    
-    results_sorted = sorted(results, key=lambda x: x["profit_per_hour"], reverse=True)
-    return results_sorted[:10]
 
 def get_user_companies_workers(user_id):
     try:
@@ -274,6 +239,11 @@ def get_user_companies_workers(user_id):
         }
         return user_detail, user_companies_workers
     except Exception as e:
+        log_exception(
+            e,
+            function="get_user_companies_workers",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve user and company info {e}')
     
 def get_company_by_id(company_id):
@@ -293,203 +263,183 @@ def get_company_by_id(company_id):
         company = data[1]['result']['data']
         return company
     except Exception as e:
+        log_exception(
+            e,
+            function="get_company_by_id",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve company by ID {e}')
+    
+def get_country_by_id(country_id):
+    try:
+        url = "https://api2.warera.io/trpc/country.getCountryById,government.getByCountryId?batch=1&"
+        payload = f'''input={{
+                        "0":{{"countryId":"{country_id}"}},
+                        "1":{{"countryId":"{country_id}"}}
+                       }}
+                        '''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        country = data[0]['result']['data']
+        return country
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_country_by_id",
+            service="warera_api",
+        )
         raise Exception(f'Unable to retrieve company by ID {e}')
 
-def build_market_lookup(market_data):
-    prices = {}
-    for i in market_data:
-        code = i['top_sell_order']['itemCode']
-        prices[code] = i['top_sell_order']['price']
-    return prices
-
-
-def build_country_bonus_map(country_data, user_country):
-    bonus_map = {}
-    for c in country_data:
-        if c['code'] == user_country and c['specialization']:
-            bonus_map[c['specialization']] = c['production_bonus'] / 100
-    return bonus_map
-
-
-def automation_btc_per_day(engine_level, storage_pp, item_code, market_prices, country_bonus_map):
-    if (
-        engine_level <= 0
-        or item_code not in market_prices
-        or item_code not in WORK_MAP
-    ):
-        return 0
-
-    pp_per_day = engine_level * 24
-    effective_pp = min(pp_per_day, storage_pp)
-
-    pp_per_unit = WORK_MAP[item_code]['work']
-    units_per_day = effective_pp / pp_per_unit
-
-    price = market_prices[item_code]
-    bonus = country_bonus_map.get(item_code, 0)
-
-    return units_per_day * price * (1 + bonus)
-
-
-def decision_engine(player_id, awake_hours=16):
-    user_detail, user_companies_workers = get_user_companies_workers(player_id)
-    country_data, market_data, _ = gather_data()
-
-    market_prices = build_market_lookup(market_data)
-    country_bonus_map = build_country_bonus_map(country_data, user_detail['country'])
-
-    user_companies = []
-
-    for entry in user_companies_workers['workersPerCompany']:
-        user_workers = []
-        for worker in entry['workers']:
-            worker_detail, _ = get_user_companies_workers(worker['user'])
-            worker_detail['wage'] = worker.get('wage', 0)
-            user_workers.append(worker_detail)
-
-        company_data = get_company_by_id(entry['company']['_id'])
-
-        storage_level = company_data['activeUpgradeLevels'].get('storage', 1)
-        automated_level = company_data['activeUpgradeLevels'].get('automatedEngine', 0)
-
-        user_companies.append({
-            'name': company_data['name'],
-            'item_code': company_data['itemCode'],
-            'automated_engine_level': automated_level,
-            'storage_pp': storage_level * 200,
-            'workers': user_workers
-        })
-
-    auto_btc = 0
-    auto_breakdown = []
-    for c in user_companies:
-        btc = automation_btc_per_day(
-            c['automated_engine_level'],
-            c['storage_pp'],
-            c['item_code'],
-            market_prices,
-            country_bonus_map
+def get_player_transactions(player_id):
+    try:
+        url = "https://api2.warera.io/trpc/transaction.getPaginatedTransactions?batch=1&"
+        payload = f'''input={{
+            "0": {{
+                "limit": 100,
+                "transactionType": ["wage"],
+                "direction": "forward",
+                "userId": "{player_id}"
+            }}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        wage_transactions = data[0]['result']['data']['items']
+        return wage_transactions
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_player_transactions",
+            service="warera_api",
         )
-        auto_btc += btc
-        auto_breakdown.append({
-            'company': c['name'],
-            'item': c['item_code'],
-            'btc_per_day': round(btc, 2),
-            'engine_level': c['automated_engine_level']
-        })
-
-    employee_breakdown = []
-    employee_total_btc = 0
-    total_wages_per_day = 0
-
-    for c in user_companies:
-        item = c['item_code']
-        if item not in WORK_MAP or item not in market_prices:
-            continue
-
-        work_required = WORK_MAP[item]['work']
-        price = market_prices[item]
-        bonus = country_bonus_map.get(item, 0)
-
-        total_pp = 0
-        total_wages = 0
-        worker_details = []
-
-        for w in c['workers']:
-            starting_energy = w['energy']['total']
-            max_energy = w['energy']['total']
-            pp_per_work = w['production']['value']
-            wage = w.get('wage', 0)
-
-            daily_energy = starting_energy + (max_energy * ENERGY_REGEN_RATE * awake_hours)
-            daily_work = daily_energy // ENERGY_PER_WORK
-
-            worker_pp = daily_work * pp_per_work
-            total_pp += worker_pp
-
-            wage_cost = daily_work * wage * pp_per_work
-            total_wages += wage_cost
-            total_wages_per_day += wage_cost
-
-            btc_per_work = (pp_per_work / work_required) * price * (1 + bonus)
-            worker_revenue = daily_work * btc_per_work
-
-            worker_details.append({
-                'username': w['username'],
-                'revenue_per_day': round(worker_revenue, 2),
-                'daily_wage_cost': round(wage_cost, 2),
-                'break_even_wage': round(btc_per_work, 4),
-                'current_wage': wage,
-                'energy': max_energy,
-                'production': pp_per_work,
-                'daily_work': int(daily_work),
-                'last_work_time': w['last_work_time'][:16].replace("T"," ")
-            })
-
-        usable_pp = min(total_pp, c['storage_pp'])
-        units = usable_pp / work_required
-        revenue = units * price * (1 + bonus)
-        net = revenue - total_wages
-
-        employee_total_btc += net
-
-        employee_breakdown.append({
-            'company': c['name'],
-            'item': item,
-            'pp_used': round(usable_pp, 2),
-            'units_produced': round(units, 2),
-            'revenue': round(revenue, 2),
-            'wages': round(total_wages, 2),
-            'net_btc_per_day': round(net, 2),
-            'workers': worker_details
-        })
-
-    summary_blurb = (
-        f"Automated engines generate ~{round(auto_btc, 2)} BTC/day. "
-        f"Employees generate ~{round(employee_total_btc, 2)} BTC/day after wages. "
-        f"Total wage spend is ~{round(total_wages_per_day, 2)} BTC/day."
-    )
+        raise Exception(f'Unable to retrieve player_transactions {e}')  
     
-    best_item = calculate_best_production_efficiency(country_data, market_data)[0]
-    optimal_item_code = best_item['item']
+def get_stats_by_company(company_id):
+    try:
+        url = "https://api2.warera.io/trpc/work.getStatsByCompany?batch=1&"
+        payload = f'''input={{
+            "0": {{"companyId":"{company_id}","days":60,"timezone":"Africa/Johannesburg"}}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        stats_by_company = data[0]['result']['data']
+        return stats_by_company
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_stats_by_company",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve stats by company {e}')  
 
-    producing_optimal = any(
-        c['item_code'] == optimal_item_code for c in user_companies
-    )
-
-    optimal_result = None
-
-    if not producing_optimal:
-        optimal_btc = 0
-
-        for c in user_companies:
-            btc = automation_btc_per_day(
-                c['automated_engine_level'],
-                c['storage_pp'],
-                optimal_item_code,
-                market_prices,
-                country_bonus_map
-            )
-            optimal_btc += btc
-
-        increase_pct = ((optimal_btc - auto_btc) / auto_btc * 100) if auto_btc > 0 else 100
-        delta_btc = optimal_btc - auto_btc
-
-        optimal_result = {
-            "item": optimal_item_code,
-            "btc_per_day_if_switched": round(optimal_btc, 2),
-            "blurb": (
-                f"Switching production to {optimal_item_code} could increase BTC/day by "
-                f"{round(increase_pct, 2)}%, or ~{round(delta_btc, 2)} BTC."
-            )
-        }
-    return {
-        "summary": summary_blurb,
-        "automation": auto_breakdown,
-        "employees": employee_breakdown,
-        "total_wages_per_day": round(total_wages_per_day, 2),
-        "optimal_switch": optimal_result
-    }
+def get_stats_by_worker(worker_id, company_id):
+    try:
+        url = "https://api2.warera.io/trpc/work.getStatsByCompany?batch=1&"
+        payload = f'''input={{
+            "0": {{"workerId":"{worker_id}","companyId":"{company_id}","days":60,"timezone":"Africa/Johannesburg"}}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        stats_by_worker = data[0]['result']['data']
+        return stats_by_worker
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_stats_by_worker",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve stats by worker {e}')  
+    
+def get_user_profile_info(player_id):
+    try:
+        url = "https://api2.warera.io/trpc/user.getUserById?batch=1&"
+        payload = f'''input={{
+            "0": {{"userId":"{player_id}"}}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        user_profile = data[0]['result']['data']
+        return user_profile
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_user_profile_info",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve stats by company: {e}') 
+    
+def get_item_trading():
+    try:
+        item_trading = []
+        for item_code in list(WORK_MAP.keys()):
+            url = "https://api2.warera.io/trpc/itemTrading.getItemTrading?batch=1&"
+            payload = f'''input={{
+                "0": {{"itemCode":"{item_code}"}}
+            }}'''
+            url = url+payload
+            headers = {
+                'authorization': API_KEY,
+                'Origin': 'https://app.warera.io',
+                }
+            response = requests.get(url, headers=headers, allow_redirects=False)
+            data = response.json()
+            item_trading_response = data[0]['result']['data']
+            item_trading.append({'item': item_code,'stats':item_trading_response['values'][-7:],'current_value':round(item_trading_response['currentValue'],2)})
+        return item_trading
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_item_trading",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve item trading: {e}')  
+    
+def get_workers(player_id):
+    try:
+        url = "https://api2.warera.io/trpc/worker.getWorkers?batch=1&"
+        payload = f'''input={{
+            "0": {{"userId":"{player_id}"}}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        workers = data[0]['result']['data']
+        return workers
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_workers",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve stats by worker {e}')  
 
 def store_daily_wage_snapshot():
     wage_data = get_wage_stats()
@@ -534,9 +484,6 @@ def store_daily_wage_snapshot():
     finally:
         client.close()
 
-def store_snapshots(market_data):
-    store_daily_market_snapshot(market_data)
-    store_daily_wage_snapshot()
     
 def store_daily_market_snapshot(market_data):
     uri = (

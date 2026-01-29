@@ -64,30 +64,47 @@
             <p class="subtitle">Optimize your resource production and maximize profits</p>
         </header>
 
-        <div class="optimal-hero">
-            <div class="optimal-label">💎 Most optimal resource</div>
-            <small style="letter-spacing: 0.1em;color: #666;">* This is algorithmically biased. Ensure that your production is in line with your personal goals and wealth strategy.</small>
-            <div class="optimal-resource-name">
+<div class="optimal-hero">
+    <div class="optimal-label">📈 Market Trends</div>
+    <small style="letter-spacing: 0.1em;color: #666;display: block;margin-bottom: 24px;">7-day market trends, and trading activity across all resources</small>
+    
+    <div class="market-trends-grid">
+        {% for item in market_data %}
+        <div class="market-card {% if item == winner %}green-border{% elif item == loser %}red-border{% endif %}">
+            <div class="market-card-header">
                 <img
-                    src="{{ url_for('static', filename=item_icons[production_efficiency[0].item]) }}"
-                    alt="{{ production_efficiency[0].item }}"
-                    title="{{ production_efficiency[0].item }}"
+                    src="{{ url_for('static', filename=item_icons[item.item]) }}"
+                    alt="{{ item.item }}"
+                    title="{{ item.item|replace('_', ' ')|title }}"
+                    class="market-icon"
                 >
-                <span class="pointer" onclick="window.open('https://app.warera.io/country/{{ production_efficiency[0].country_id }}', '_blank').focus();">Region: {{ production_efficiency[0].country }}</span>
             </div>
-            <div class="optimal-profit">Expected Profit: {{ production_efficiency[0].profit_per_hour }}/hour</div>
-            <div class="optimal-details">{{ production_efficiency[0].result }}</div>
-            <div class="optimal-input-group">  
-            <button class="btn-soft" id="openInfoDialog">How is this possible?</button>
-            </div>  
-            <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
-
-            <div class="optimal-label">⚙️ Calculate your automated engine and worker output</div>
+            <div class="market-stats">
+                <div class="market-stat">
+                    <span class="market-stat-label">7-day Price change</span>
+                    <span class="market-stat-value {% if item['price_change_pct_7day'] > 0 %}green{% else %}red{% endif %}">
+                        {% if item['price_change_pct_7day'] > 0 %}+{% endif %}{{ "%.2f"|format(item['price_change_pct_7day']) }}%
+                    </span>
+                </div>
+                <div class="market-stat">
+                    <span class="market-stat-label">Average daily Trades</span>
+                    <span class="market-stat-value">{{ "{:,.0f}".format(item.avg_daily_transactions) }}</span>
+                </div>
+                <div class="market-stat">
+                    <span class="market-stat-label">Average daily Volume</span>
+                    <span class="market-stat-value">{{ "{:,.0f}".format(item.avg_daily_quantity) }} units</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+                <div style="height: 0.9px;width: 100%;background-color: rgb(132, 132, 132);/*! padding: 5px; *//*! margin: px; */margin-top: 2%;margin-bottom: 2%;"></div>
+            <div class="optimal-label">⚙️ View company and employee breakdown</div>
             <div class="optimal-input-group">
                 <input type="text" class="optimal-input" placeholder="Enter a player id or warera player profile url" id="playerInput">
                 <button id="getProfileData" class="btn-soft">Get profile data</button>
             </div>
-        </div>
+</div>
 
         <div class="countries-section">
             <h2>Countries <small>Click row to view</small></h2>
@@ -148,45 +165,25 @@
         <div class="stats-grid">
             <!-- Market Prices -->
             <div class="stat-card">
-                <h3>💰 Market Prices <small>Click to view</small></h3>
+                <h3>💰 Market Pricing (7 days) <small>Click to view</small></h3>
                 <div class="stat-list">
                     {% for market in market_data %}
-                    <div class="stat-item pointer" onclick="window.open('https://app.warera.io/market/trading?itemCode={{ market.top_buy_order.itemCode }}', '_blank').focus();">
+                    <div class="stat-item pointer" onclick="window.open('https://app.warera.io/market/trading?itemCode={{ market.item }}', '_blank').focus();">
                         <span class="stat-label">
                             <img
-                                src="{{ url_for('static', filename=item_icons[market.top_buy_order.itemCode]) }}"
-                                alt="{{ market.top_buy_order.itemCode }}"
-                                title="{{ market.top_buy_order.itemCode }}"
+                                src="{{ url_for('static', filename=item_icons[market.item]) }}"
+                                alt="{{ market.item }}"
+                                title="{{ market.item }}"
                             >
                         </span>
                         <div class="price-group">
                             <div class="price-row">
-                                <span class="price-label">Buy:</span>
-                                <span class="buy-price">{{ market.top_buy_order.price }}</span>
-                            </div>
-                            <div class="price-row">
-                                <span class="price-label">Sell:</span>
-                                <span class="sell-price">{{ market.top_sell_order.price }}</span>
+                                <span class="price-label">Price change:</span>
+                                <span class="buy-price {{ 'green' if market.price_change_pct_7day >= 0 else 'red' }}">
+                                    {{ ('+' if market.price_change_pct_7day >= 0 else '') ~ market.price_change_pct_7day }}
+                                </span>
                             </div>
                         </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Most Profitable -->
-            <div class="stat-card">
-                <h3>📊 Most Profitable</h3>
-                <div class="stat-list">
-                    {% for metric in production_efficiency %}
-                    <div class="stat-item">
-                        <span class="stat-label">{{ metric.country }}</span>
-                        <span class="stat-value"><img
-                                    src="{{ url_for('static', filename=item_icons[metric.item]) }}"
-                                    alt="{{ metric.item }}"
-                                    title="{{ metric.item }}"
-                                ></span>
-                        <span class="stat-value">~{{ metric.profit_per_hour }}/per hour</span>
                     </div>
                     {% endfor %}
                 </div>

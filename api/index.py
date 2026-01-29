@@ -1,5 +1,11 @@
+from threading import Lock
+
 from flask import Flask, abort, jsonify, request, render_template
-from .core.warera_api import get_country_information, get_map_data, gather_data, calculate_best_production_efficiency, decision_engine, store_snapshots
+from .core.eco_tools import gather_data, store_snapshots, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser
+from .core.warera_api import get_item_trading
+from concurrent.futures import ThreadPoolExecutor
+import time
+from .core.logger import log_exception
 app = Flask(__name__)
 
 ITEM_ICONS = {
@@ -23,26 +29,55 @@ ITEM_ICONS = {
     "steel": "img/steel.png"
 }
 
-
 @app.route("/")
 def home():
     try:
         country_data, market_data, deposit_count = gather_data()
-        production_efficiency = calculate_best_production_efficiency(country_data,market_data)
+        winner,loser = get_biggest_winner_loser(market_data)
         context = {
             'data':country_data,
             'market_data':market_data,
             'deposit_count':deposit_count, 
-            'production_efficiency':production_efficiency,
-            'item_icons':ITEM_ICONS
+            'item_icons':ITEM_ICONS,
+            'winner': winner,
+            'loser': loser
         }
-        store_snapshots(market_data)
+
         return render_template("index.html",**context)
-    except:
-        raise
+    except Exception as e:
+        log_exception(
+            e,
+            function="/home",
+            service="index",
+        )
+        return render_template("error.html", error_message=f"An unexpected error occurred. Please try again.")
     
 @app.route("/get-summary")
 def get_summary():
-    player_id = request.args.get('playerId')
-    result = decision_engine(player_id)
-    return jsonify(result)
+    try:
+        start = time.perf_counter()
+        player_id = request.args.get('playerId')
+        market_data = get_item_trading()
+        market_lookup = build_market_lookup(market_data)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            future_company = executor.submit(company_breakdown, player_id)
+            future_employee = executor.submit(employee_breakdown, player_id)
+            future_job = executor.submit(job_breakdown, player_id)
+
+            result = {
+                'employee_breakdown': future_employee.result(),
+                'company_breakdown': future_company.result(),
+                'job_breakdown': future_job.result(),
+                'market_lookup': market_lookup
+            }
+        return jsonify(result)
+    except Exception as e:
+        log_exception(
+            e,
+            function="/get-summary",
+            service="index",
+        )
+        raise
+    finally:
+        elapsed = time.perf_counter() - start
+        print(f"/ summary executed in {elapsed:.3f}s")

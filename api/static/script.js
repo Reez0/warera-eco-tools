@@ -75,194 +75,231 @@ $(document).on('click', '#getProfileData', function () {
     if (!playerId) {
         $input.val('')
             .attr('placeholder', 'Invalid player ID or profile URL')
-            .css('border-color', '#f87171')
+            .addClass('input-error')
             .focus();
 
         setTimeout(() => {
             $input.attr('placeholder', originalPlaceholder)
-                .css('border-color', '#333');
+                .removeClass('input-error');
         }, 2000);
         return;
     }
 
-    $input.css('border-color', '#333').attr('placeholder', originalPlaceholder);
+    $input.removeClass('input-error').attr('placeholder', originalPlaceholder);
     $button.prop('disabled', true).html('<span class="btn-spinner"></span> Please wait...');
 
     const $hero = $('.optimal-hero');
 
-    // ---------- TEMPLATES ----------
+    const formatNumber = (num) => {
+        const truncated = Math.floor(num * 100) / 100;
+        return truncated.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+    const formatInteger = num => Math.round(num).toLocaleString('en-US');
+
     const sectionWrapper = (inner, extraClass = '') => `
         <div class="dynamic-section ${extraClass}">
             ${inner}
         </div>
     `;
 
-    const sectionTitle = text => `
-        <div class="section-title">${text}</div>
-    `;
+    const sectionTitle = text => `<div class="section-title">${text}</div>`;
 
     fetch(`/get-summary?playerId=${encodeURIComponent(playerId)}`)
         .then(res => res.json())
         .then(data => {
             $hero.find('.dynamic-section').remove();
+            let sectionsHtml = '';
 
-            // ===== SUMMARY =====
-            if (data.summary) {
-                $hero.append(sectionWrapper(`
-                    ${sectionTitle('Player Summary')}
-                    <div class="summary-text">${data.summary}</div>
-                `));
+            if (data.company_breakdown && data.company_breakdown.length) {
+                const companyCards = data.company_breakdown.map(company => {
+                    const stats = company.stats;
+                    const netProfit = stats.avg_daily_net_profit || 0;
+                    const profitClass = netProfit >= 0 ? 'profit' : 'loss';
+
+                    // Employee cards
+                    let workersHtml = '';
+                    if (company.workers && company.workers.length > 0) {
+                        workersHtml = `
+                            <div class="section-title workers-title">Workers (${company.workers.length})</div>
+                            <div class="workers-section">
+                                ${company.workers.map(worker => `
+                                    <div class="employee-card">
+                                        <div class="employee-name">Worker Name: ${worker.name}</div>
+                                        <div>Current Wage: <strong>${formatNumber(worker.wage)}</strong> BTC</div>
+                                        <div>Energy: <strong>${worker.energy} ⚡</strong></div>
+                                        <div>Production: <strong>${worker.production} ⛏️</strong></div>
+                                        <div>Fidelity Level: <strong>${worker.fidelity} 💛</strong></div>
+                                        <div>Joined: <strong>${new Date(worker.joinedAt).toLocaleDateString()}</strong></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    }
+
+                    // Daily averages section for the company
+                    let dailyAveragesHtml = '';
+                    const employeeData = data.employee_breakdown?.find(eb => eb.company_id === company.company._id);
+                    if (employeeData?.workers && employeeData.workers.length) {
+                        const totals = employeeData.workers.reduce((acc, w) => {
+                            const s = w.stats || {};
+                            acc.productionPoints += s.avg_daily_production_points || 0;
+                            acc.unitsProduced += s.avg_daily_units_produced || 0;
+                            acc.revenue += s.avg_potential_daily_revenue || 0;
+                            acc.wage += s.avg_daily_wage_expenditure || 0;
+                            acc.netProfit += s.avg_daily_net_profit || 0;
+                            acc.profitMargin += s.avg_daily_profit_margin || 0;
+                            acc.breakEven += s.break_even_price || 0;
+                            return acc;
+                        }, {
+                            productionPoints: 0,
+                            unitsProduced: 0,
+                            revenue: 0,
+                            wage: 0,
+                            netProfit: 0,
+                            profitMargin: 0,
+                            breakEven: 0
+                        });
+
+                        const count = employeeData.workers.length || 1;
+
+                        dailyAveragesHtml = `
+                        <div class="stat-label">Daily Averages (All Workers)</div>
+                            <div class="company-stats-grid two-columns">
+                                
+                                <div class="stat-detail">Production Points: <strong>${formatInteger(totals.productionPoints / count)}</strong> PP/day ⛏️</div>
+                                <div class="stat-detail">Units Produced: <strong>${formatNumber(totals.unitsProduced / count)}</strong> units/day</div>
+                                <div class="stat-detail">Revenue Generated: <strong class="green">~${formatNumber(totals.revenue / count)}</strong> BTC/day</div>
+                                <div class="stat-detail">Wage Expenditure: <strong class="red">${formatNumber(totals.wage / count)}</strong> BTC/day</div>
+                                <div class="stat-detail">Net Profit: <strong class="${totals.netProfit / count >= 0 ? 'green' : 'red'}">${formatNumber(totals.netProfit / count)}</strong> BTC/day</div>
+                                <div class="stat-detail">Profit Margin: <strong>${formatNumber(totals.profitMargin / count)}</strong>%</div>
+                                <div class="stat-detail">Break-even Price: <strong>${formatNumber(totals.breakEven / count)}</strong> BTC/unit</div>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="company-card ${profitClass}">
+                            <div class="company-header">
+                                <img src="/static/img/${company.company.itemCode}.png" alt="${company.company.itemCode}" title="${company.company.itemCode}" class="company-icon">
+                                <p class="company-header-name">${company.company.name}</p>
+                                <small>Current Market Value: 1  = ${formatNumber(data.market_lookup[company.company.itemCode])} BTC</small>
+                            </div>
+                            
+                            <div class="company-totals">
+                                <span>
+                                    Avg Daily Revenue
+                                    <strong class="green">${formatNumber(stats.avg_daily_revenue_total)} BTC</strong>
+                                </span>
+                                <span>
+                                    Avg Daily Wages
+                                    <strong class="red">${formatNumber(stats.avg_daily_wages_paid)} BTC</strong>
+                                </span>
+                                <span>
+                                    Avg Potential Daily Profit
+                                    <strong class="${profitClass === 'profit' ? 'green' : 'red'}">${formatNumber(netProfit)} BTC</strong>
+                                </span>
+                            </div>
+
+                            <div class="company-stats-grid two-columns">
+                                <div class="stat-column">
+                                    <div class="stat-label">Avg Daily Production Points</div>
+                                    <div class="stat-detail">From Workers: <strong>${formatInteger(stats.avg_daily_employee_prod)} ⚡</strong></div>
+                                    <div class="stat-detail">From Self Work: <strong>${formatInteger(stats.avg_daily_self_work)} ⛏️</strong></div>
+                                    <div class="stat-detail">From Automation: <strong>${formatInteger(stats.avg_daily_automation_engine)} ⚙️</strong></div>
+                                    <div class="stat-total">Total: <strong>${formatInteger(stats.avg_daily_total_pp)} PP/day 💸</strong></div>
+                                </div>
+                                <div class="stat-column">
+                                    <div class="stat-label">Avg Daily Units Produced</div>
+                                    <div class="stat-detail">From Workers: <strong>${formatNumber(stats.avg_daily_units_employee)}  ⚡</strong></div>
+                                    <div class="stat-detail">From Self Work: <strong>${formatNumber(stats.avg_daily_units_self_work)}  ⛏️</strong></div>
+                                    <div class="stat-detail">From Automation: <strong>${formatNumber(stats.avg_daily_units_automation)} ⚙️</strong></div>
+                                    <div class="stat-total">Total: <strong>${formatNumber(stats.avg_daily_units_total)} units/day 💸</strong></div>
+                                </div>
+                            </div>
+
+                            <div class="company-stats-grid three-columns">
+                                <div>From Workers<div class="stat-value">${formatNumber(stats.avg_daily_revenue_employee)} BTC/day</div></div>
+                                <div>From Self Work<div class="stat-value">${formatNumber(stats.avg_daily_revenue_self_work)} BTC/day</div></div>
+                                <div>From Automation<div class="stat-value">${formatNumber(stats.avg_daily_revenue_automation)} BTC/day</div></div>
+                            </div>
+
+                            ${workersHtml}
+                            ${dailyAveragesHtml}
+                        </div>
+                    `;
+                }).join('');
+
+                sectionsHtml += sectionWrapper(`
+                    ${sectionTitle('Company overview')}
+                    ${companyCards}
+                `);
             }
 
-            // ===== AUTOMATION =====
-            if (data.automation && data.automation.length) {
-                const columns = data.automation.map(item => `
-                    <div class="automation-card">
-                        <div>
-                            <div class="automation-label">BTC per day</div>
-                            <div class="automation-value-btc">${item.btc_per_day}</div>
-                        </div>
+            // Summary section
+            if (data.company_breakdown && data.company_breakdown.length) {
+                const totalRevenue = data.company_breakdown.reduce((sum, c) => sum + (c.stats.avg_daily_revenue_total || 0), 0);
+                const totalWages = data.company_breakdown.reduce((sum, c) => sum + (c.stats.avg_daily_wages_paid || 0), 0);
+                const totalNetProfit = data.company_breakdown.reduce((sum, c) => sum + (c.stats.avg_daily_net_profit || 0), 0);
+                const totalCompanies = data.company_breakdown.length;
+                const totalWorkers = data.employee_breakdown?.reduce((sum, eb) => sum + (eb.workers?.length || 0), 0) || 0;
 
-                        <div>
-                            <div class="automation-label">Company</div>
-                            <div class="automation-value-company">
-                                ${item.company} (level ${item.engine_level})
-                            </div>
-                        </div>
+                const profitClass = totalNetProfit >= 0 ? 'green' : 'red';
 
-                        <div>
-                            <div class="automation-label">Resource Produced</div>
-                            <img
-                                src="/static/img/${item.item}.png"
-                                alt="${item.item}"
-                                title="${item.item}"
-                                class="automation-icon"
-                            >
+                sectionsHtml = sectionWrapper(`
+                    ${sectionTitle('Summary')}
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div class="summary-label">Total Companies</div>
+                            <div class="summary-value">${totalCompanies}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Total Workers</div>
+                            <div class="summary-value">${totalWorkers}</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Avg Daily Revenue</div>
+                            <div class="summary-value ${profitClass}">${formatNumber(totalRevenue)}</div>
+                            <div class="summary-subvalue">BTC/day</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Avg Daily Wages paid</div>
+                            <div class="summary-value red">${formatNumber(totalWages)}</div>
+                            <div class="summary-subvalue">BTC/day</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Avg Daily Profit</div>
+                            <div class="summary-value ${profitClass}">${formatNumber(totalNetProfit)}</div>
+                            <div class="summary-subvalue">BTC/day</div>
+                        </div>
+                        <div class="summary-card">
+                            <div class="summary-label">Daily wage earn from work</div>
+                            <div class="summary-value green">${formatNumber(data.job_breakdown.average_daily_wage_earn)}</div>
+                            <div class="summary-subvalue">BTC/day</div>
                         </div>
                     </div>
-                `).join('');
-
-                $hero.append(sectionWrapper(`
-                    ${sectionTitle('Automation Data')}
-                    <div class="automation-grid">${columns}</div>
-                `));
+                `, 'centered') + sectionsHtml;
             }
 
-            // ===== EMPLOYEES =====
-            if (data.employees && data.employees.some(c => c.workers && c.workers.length > 0)) {
-                const cards = [];
-
-                // Only include companies that have workers
-                data.employees
-                    .filter(company => company.workers && company.workers.length > 0)
-                    .forEach(company => {
-                        const companyProfitClass = company.net_btc_per_day >= 0 ? 'profit' : 'loss';
-                        const redGreenClass = company.net_btc_per_day >= 0 ? 'green' : 'red';
-
-                        cards.push(`
-                            <div class="company-card ${companyProfitClass}">
-                                <div class="company-header">
-                                    <strong>${company.company}</strong> • 
-                                    <img src="/static/img/${company.item}.png" alt="${company.item}" title="${company.item}" class="automation-icon">
-                                </div>
-                                <div class="company-totals">
-                                    <span>Revenue: <strong>${company.revenue}</strong> BTC</span>
-                                    <span>Wages Paid: <strong>${company.wages}</strong> BTC</span>
-                                    <span>Net BTC/Day: <strong class="${redGreenClass}">${company.net_btc_per_day}</strong> BTC</span>
-                                </div>
-                                <div class="workers-section">
-                                    ${company.workers.map(worker => `
-                                        <div class="employee-card">
-                                            <div class="employee-name">${worker.username}</div>
-                                            <div>
-                                            ⚡ ${worker.energy} 
-                                            ⛏️ ${worker.production} 
-                                            Daily Work: ~${worker.daily_work} *
-                                            </div>
-                                            <div class="revenue"> 
-                                                <div class="revenue-item">
-                                                    <p>Daily Revenue: </p>
-                                                    <p><strong>${worker.revenue_per_day}</strong> BTC</p>
-                                                </div>
-                                                <div class="revenue-item">
-                                                    <p>Daily Wage: </p>
-                                                    <p><strong>${worker.daily_wage_cost}</strong> BTC</p>
-                                                </div>
-                                                <div class="revenue-item">
-                                                    <p>Current Wage: </p>
-                                                    <p><strong>${worker.current_wage}</strong></p>
-                                                </div>
-                                                <div class="revenue-item">
-                                                    <p>Break-even: </p>
-                                                    <p><strong>${worker.break_even_wage}</strong></p>
-                                                </div>
-                                                 <div class="revenue-item">
-                                                    <p>Last work: </p>
-                                                    <p><strong>${worker.last_work_time} UTC</strong></p>
-                                                </div>
-                                            </div>
- 
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            </div>
-                        `);
-                    });
-
-                if (cards.length > 0) {
-                    $hero.append(sectionWrapper(`
-                        ${sectionTitle('Employee Breakdown')}
-                        <div class="employee-grid-wrapper">
-                            <div class="employee-grid">${cards.join('')}</div>
-                        </div>
-                    `));
-                    $hero.append(`
-                        <small class="small-text">* We assume the worker starts the day with a full energy bar and uses energy consistently throughout the day whenever possible.
-
-                            Energy regenerates at a constant hourly rate.
-
-                            Each work action costs 10 energy.
-
-                            Whenever the worker reaches >=10 energy, they immediately perform work.
-
-                            For example:
-
-                            A worker with 30 max energy, 10 production, and 0.089 wage earns
-                            0.089 * 10 = 0.89 BTC per work
-
-                            Over a normal day, energy regeneration plus starting energy allows multiple work actions.
-
-                            Any leftover energy below 10 is carried forward and contributes to future work.
-
-                            This model estimates average daily output, not exact click timing.
-                        </small>
-                        `)
-                }
-            }
-
-
-            // ===== RECOMMENDATION =====
-            if (data.optimal_switch) {
-                $hero.append(sectionWrapper(`
-                    ${sectionTitle('Recommendation')}
-                    <div class="recommendation-text">
-                        ${data.optimal_switch.blurb}
-                        You're missing out on a potential
-                        ${data.optimal_switch.btc_per_day_if_switched}
-                        BTC per day
-                    </div>
-                `, 'centered'));
-            }
+            $hero.append(sectionsHtml);
         })
-        .catch(() => {
+        .catch(err => {
+            console.error('Error:', err);
             $hero.find('.dynamic-section').remove();
-            $hero.append(`
-                <div class="dynamic-section error">
-                    Failed to fetch player data. Please try again.
-                </div>
-            `);
+            $hero.append(`<div class="dynamic-section error">Failed to fetch player data. Please try again.</div>`);
         })
         .finally(() => {
             $button.prop('disabled', false).text(buttonText);
         });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(() => {
+        const target = document.querySelector('.green-border, .red-border');
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, 300);
 });
