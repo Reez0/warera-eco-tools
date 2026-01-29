@@ -1136,3 +1136,74 @@ tr.max-bonus td {
     animation: jiggle-pause 5s ease-in-out infinite;
 }
 
+/* Loading Overlay - Dark Theme */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.loading-content {
+    text-align: center;
+    padding: 48px 40px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    border: 1px solid #333;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.loading-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #666, transparent);
+}
+
+.spinner {
+    border: 4px solid #222;
+    border-top: 4px solid #d4d4d4;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 24px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.02em;
+}
+
+.loading-subtext {
+    font-size: 0.95rem;
+    color: #888;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* Fade out animation */
+.loading-overlay.fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}

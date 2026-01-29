@@ -1,7 +1,7 @@
 from threading import Lock
 
-from flask import Flask, abort, jsonify, request, render_template
-from .core.eco_tools import gather_data, store_snapshots, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot
+from flask import Flask, jsonify, request, render_template
+from .core.eco_tools import gather_data, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot
 from .core.warera_api import get_item_trading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -33,24 +33,27 @@ ITEM_ICONS = {
 def home():
     try:
         country_data, market_data, deposit_count = gather_data()
-        winner,loser = get_biggest_winner_loser(market_data)
+        winner, loser = get_biggest_winner_loser(market_data)
+
         context = {
-            'data':country_data,
-            'market_data':market_data,
-            'deposit_count':deposit_count, 
-            'item_icons':ITEM_ICONS,
-            'winner': winner,
-            'loser': loser
+            "data": country_data,
+            "market_data": market_data,
+            "deposit_count": deposit_count,
+            "item_icons": ITEM_ICONS,
+            "winner": winner,
+            "loser": loser,
         }
+
         store_daily_wage_snapshot()
-        return render_template("index.html",**context)
+
+        return render_template("index.html", **context)
+
     except Exception as e:
-        log_exception(
-            e,
-            function="/home",
-            service="index",
+        log_exception(e, function="/home", service="index")
+        return render_template(
+            "error.html",
+            error_message="An unexpected error occurred. Please try again.",
         )
-        return render_template("error.html", error_message=f"An unexpected error occurred. Please try again.")
     
 @app.route("/get-summary")
 def get_summary():
@@ -81,3 +84,5 @@ def get_summary():
     finally:
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
+        
+

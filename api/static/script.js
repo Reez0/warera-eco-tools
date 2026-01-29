@@ -303,3 +303,23 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }, 300);
 });
+
+
+window.addEventListener('load', function() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    
+    loadingOverlay.classList.add('fade-out');
+    
+    setTimeout(function() {
+        loadingOverlay.style.display = 'none';
+    }, 300);
+});
+setTimeout(function() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay && loadingOverlay.style.display !== 'none') {
+        loadingOverlay.classList.add('fade-out');
+        setTimeout(function() {
+            loadingOverlay.style.display = 'none';
+        }, 300);
+    }
+}, 30000);

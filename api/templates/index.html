@@ -15,49 +15,15 @@
     <title>Warera Eco Tools</title>
 </head>
 <body>
-    <div class="container">
-        <div id="infoDialogOverlay" class="dialog-overlay">
-    <div class="dialog-box">
-        <h3>ℹ️ About Optimal Resources</h3>
-        <p>
-            This calculation answers a simple strategic question: 
-            <strong>which item should be produced, and in which country, to earn the most profit per hour?</strong>
-            Instead of looking only at market prices or production bonuses, it compares all production options using a single, normalized efficiency metric.
-        </p>
-
-        <p>
-            The model assumes self-production with no raw material costs and a fixed amount of production work per hour.  
-            Each country-item combination is evaluated by estimating how much profit can be generated if all available production capacity is spent on that item in that country.
-        </p>
-
-        <p>The profit per hour is estimated using the following formula:</p>
-
-        <div class="math-block">
-            $$
-            \text{Profit per hour} = 
-            \frac{\text{Sell Price} \times (1 + \text{Production Bonus})}{\text{Work Required}} 
-            \times \text{Entrepreneurship per Hour}
-            $$
-        </div>
-
-        <p>To ensure fair comparisons, the result is normalized per unit produced:</p>
-
-        <div class="math-block">
-            $$
-            \text{Normalized Profit per Hour} = \frac{\text{Profit per hour}}{1 \text{ unit}}
-            $$
-        </div>
-
-        <p>
-            The final output ranks all possible country-item combinations by normalized profit per hour, 
-            highlighting the most efficient long-term production opportunities under current market conditions.
-        </p>
-
-        <div class="dialog-actions">
-            <button class="btn-soft" id="closeInfoDialog">Close</button>
+        <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p class="loading-text">Loading...</p>
+            <p class="loading-subtext">This may take a few moments</p>
         </div>
     </div>
-</div>
+    <div class="container">
+
 
         <header>
             <h1>Warera Eco Tools</h1>

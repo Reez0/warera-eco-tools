@@ -1,18 +1,23 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from .warera_api import (
-    get_company_by_id,
     get_map_data,
     get_country_information,
     get_item_trading,
     get_user_companies_workers,
-    get_market_data,
     get_stats_by_worker,
     get_stats_by_company,
     get_user_profile_info,
-    store_daily_market_snapshot,
-    store_daily_wage_snapshot
+    get_wage_stats
 )
-from .logger import log_exception
+import os
+from datetime import datetime, timezone
+from pymongo import MongoClient, ASCENDING
+from concurrent.futures import ThreadPoolExecutor
+
+_client = None
+_collection = None
+
+executor = ThreadPoolExecutor(max_workers=4)
 
 WORK_MAP = {
     "lightAmmo": {"quantity": 1, "work": 1},
@@ -54,51 +59,40 @@ HOURS_PER_DAY = 16
 ENERGY_PER_WORK = 10
 
 def gather_data():
-    try:
-        from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            future_map = executor.submit(get_map_data)
-            future_country = executor.submit(get_country_information)
-            future_market = executor.submit(get_item_trading)
+    future_map = executor.submit(get_map_data)
+    future_country = executor.submit(get_country_information)
+    future_market = executor.submit(get_item_trading)
 
-            map_data = future_map.result()
-            country_data = future_country.result()
-            market_data = future_market.result()
+    map_data = future_map.result()
+    country_data = future_country.result()
+    market_data = future_market.result()
 
-        for country in country_data:
-            country['deposits'] = []
-            country['max_bonus_applies'] = {'value': None}
+    deposits_by_code = defaultdict(list)
+    for deposit in map_data:
+        if deposit.get("code"):
+            deposits_by_code[deposit["code"]].append(deposit)
 
-            for deposit in map_data:
-                if country['code'] == deposit['code']:
-                    country['deposits'].append(deposit)
+    for country in country_data:
+        deposits = deposits_by_code.get(country["code"], [])
+        country["deposits"] = deposits
+        country["max_bonus_applies"] = {"value": None}
 
-            if country['deposits']:
-                for deposit in country['deposits']:
-                    if deposit['deposit_type'] == country['specialization']:
-                        country['max_bonus_applies'] = {
-                            'value': int(country['production_bonus']) + 30
-                        }
+        for deposit in deposits:
+            if deposit["deposit_type"] == country["specialization"]:
+                country["max_bonus_applies"] = {
+                    "value": int(country["production_bonus"]) + 30
+                }
+                break
 
-        count_deposits = dict(
-            Counter(
-                d['deposit_type']
-                for d in map_data
-                if d.get('deposit_type')
-            ).most_common()
-        )
+    count_deposits = Counter(
+        d["deposit_type"]
+        for d in map_data
+        if d.get("deposit_type")
+    )
 
-        market_data_summary = summarize_market_data(market_data)
+    market_data_summary = summarize_market_data(market_data)
 
-        return country_data, market_data_summary, count_deposits
-
-    except Exception as e:
-        log_exception(
-            e,
-            function="gather_data",
-            service="eco_tools",
-        )
-        raise Exception(f'Unable to retrieve data from warera API {e}')
+    return country_data, market_data_summary, count_deposits
     
 def build_market_lookup(market_data):
     prices = {}
@@ -134,12 +128,6 @@ def employee_breakdown(user_id):
                    'workers': [{'id':i['user'],'stats':None} for i in company_detail['workers']]
                 }
         company_worker_pairings.append(pairing)
-    # for company_worker_pairing in company_worker_pairings:
-    #     for worker in company_worker_pairing['workers']:
-    #         worker_detail = get_user_profile_info(worker['id'])
-    #         worker['name'] = worker_detail['username']
-    #         worker['energy'] = worker_detail['skills']['energy']['value']
-    #         worker['production'] = worker_detail['skills']['production']['value']
     for company_worker_pairing in company_worker_pairings:
         for worker in company_worker_pairing['workers']:
             
@@ -192,7 +180,7 @@ def company_breakdown(user_id):
     market_prices = get_item_trading()
     market_lookup_table = build_market_lookup(market_prices)
     result = []
-
+    
     for company_detail in user_companies['workersPerCompany']:
         for worker in company_detail['workers']:
             worker_detail = get_user_profile_info(worker['user'])
@@ -277,6 +265,55 @@ def job_breakdown(player_id):
     job_detail['average_daily_wage_earn'] = sum([i['wage'] for i in job_stats])/len(job_stats)
     return job_detail
 
-def store_snapshots(market_data):
-    store_daily_market_snapshot(market_data)
-    store_daily_wage_snapshot()
+def get_wage_collection():
+    global _client, _collection
+
+    if _collection is None:
+        uri = (
+            f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+            f"{os.environ['MONGO_DB_PASSWORD']}"
+            "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+        )
+
+        _client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+        )
+
+        db = _client["warera_market"]
+        _collection = db["wage_data"]
+
+        _collection.create_index(
+            [("day", ASCENDING)],
+            unique=True
+        )
+
+    return _collection
+
+def store_daily_wage_snapshot():
+    collection = get_wage_collection()
+    wage_data = get_wage_stats()
+
+    now = datetime.now(timezone.utc)
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    document = {
+        "day": day,
+        "allowedMin": wage_data["allowedRange"]["min"],
+        "allowedMax": wage_data["allowedRange"]["max"],
+        "allowedAvg": wage_data["allowedRange"]["average"],
+        "topOffer": wage_data.get("topOffer"),
+        "topEligibleOffer": wage_data.get("topEligibleOffer"),
+        "eligibleWages": [
+            offer["wage"]
+            for offer in wage_data.get("topEligibleOffers", [])
+        ],
+        "createdAt": now,
+    }
+
+    try:
+        collection.insert_one(document)
+    except Exception as e:
+        if "E11000" not in str(e):
+            raise
