@@ -3,145 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon_io/apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon_io/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon_io/favicon-16x16.png') }}">
     <title>Warera Eco Tools</title>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'dark-bg': '#000000',
-                        'dark-card': '#0a0a0a',
-                        'dark-card-alt': '#1a1a1a',
-                        'dark-border': '#222222',
-                        'dark-border-light': '#333333',
-                        'dark-text': '#ffffff',
-                        'dark-text-muted': '#888888',
-                        'dark-text-dim': '#666666',
-                        'dark-text-subtle': '#444444',
-                        'accent-green': '#4ade80',
-                        'accent-red': '#f87171',
-                        'accent-yellow': '#facc15',
-                        'accent-soft': '#d4d4d4',
-                    },
-                    animation: {
-                        'pulse-green-slow': 'pulse-green-slow 12s ease-in-out infinite',
-                        'jiggle-pause': 'jiggle-pause 5s ease-in-out infinite',
-                        'fade-out': 'fade-out 0.3s ease-out forwards',
-                    },
-                    keyframes: {
-                        'pulse-green-slow': {
-                            '0%, 30%': { backgroundColor: 'rgba(106, 222, 74, 0)' },
-                            '50%, 70%': { backgroundColor: 'rgba(106, 222, 74, 0.38)' },
-                            '100%': { backgroundColor: 'rgba(106, 222, 74, 0)' },
-                        },
-                        'jiggle-pause': {
-                            '0%': { transform: 'translateX(0)' },
-                            '5%': { transform: 'translateX(-6px)' },
-                            '10%': { transform: 'translateX(6px)' },
-                            '15%': { transform: 'translateX(-5px)' },
-                            '20%': { transform: 'translateX(5px)' },
-                            '25%': { transform: 'translateX(-3px)' },
-                            '30%': { transform: 'translateX(3px)' },
-                            '35%, 100%': { transform: 'translateX(0)' },
-                        },
-                        'fade-out': {
-                            '0%': { opacity: '1' },
-                            '100%': { opacity: '0' },
-                        },
-                    },
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom scrollbar styles */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #0a0a0a;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 2px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #444;
-        }
-        
-        /* Gradient text for h1 */
-        .gradient-text {
-            background: linear-gradient(135deg, #fff 0%, #999 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        /* DataTables overrides */
-        .dataTables_wrapper {
-            color: #888;
-        }
-        .dataTables_wrapper .dataTables_length,
-        .dataTables_wrapper .dataTables_filter,
-        .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate {
-            color: #888;
-            font-size: 0.9rem;
-        }
-        .dataTables_wrapper .dataTables_filter input,
-        .dataTables_wrapper .dataTables_length select {
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: #fff;
-            font-size: 0.9rem;
-        }
-        .dataTables_wrapper .dataTables_filter input:focus,
-        .dataTables_wrapper .dataTables_length select:focus {
-            outline: none;
-            border-color: #666;
-        }
-        table.dataTable {
-            border: 1px solid #1a1a1a;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        table.dataTable thead th {
-            background: #0a0a0a;
-            border-bottom: 1px solid #222;
-        }
-        table.dataTable tbody tr {
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        table.dataTable tbody tr:hover {
-            background: #1a1a1a !important;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
-            color: #888 !important;
-            background: transparent;
-            border: none;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            color: #fff !important;
-            background: #1a1a1a !important;
-        }
-        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
-            color: #000 !important;
-            background: #fff !important;
-        }
-    </style>
 </head>
 <body class="bg-dark-bg text-dark-text min-h-screen leading-normal">
     <!-- Loading Overlay -->
