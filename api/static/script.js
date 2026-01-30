@@ -1,34 +1,3 @@
-$(document).ready(function() {
-                const table = $('#countryTable').DataTable({
-                    pageLength: 10,
-                    order: [[3, 'desc']],
-                    scrollX: true,
-                    autoWidth: false,
-                    language: {
-                        search: "Search:",
-                        lengthMenu: "Show _MENU_ countries",
-                        info: "Showing _START_ to _END_ of _TOTAL_ countries",
-                        paginate: {
-                            first: "First",
-                            last: "Last",
-                            next: "Next",
-                            previous: "Previous"
-                        }
-                    }
-                });
-
-                $('#countryTable tbody').on('click', 'tr', function() {
-                    if ($(this).hasClass('selected')) {
-                        $(this).removeClass('selected');
-                    } else {
-                        table.$('tr.selected').removeClass('selected');
-                        $(this).addClass('selected');
-                        
-                        const data = table.row(this).data();
-                    }
-                });
-            });
-
 $(function () {
     $('#openInfoDialog').on('click', function () {
         $('#infoDialogOverlay')
@@ -53,6 +22,44 @@ $(function () {
     }
   };
 
+$(document).ready(function() {
+    const table = $('#countryTable').DataTable({
+        pageLength: 10,
+        order: [[3, 'desc']],
+        scrollX: true,
+        autoWidth: false,
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ countries",
+            info: "Showing _START_ to _END_ of _TOTAL_ countries",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+    });
+
+    $('#countryTable tbody').on('click', 'tr', function() {
+        if ($(this).hasClass('bg-dark-card-alt')) {
+            $(this).removeClass('bg-dark-card-alt');
+        } else {
+            table.$('tr.bg-dark-card-alt').removeClass('bg-dark-card-alt');
+            $(this).addClass('bg-dark-card-alt');
+            
+            const data = table.row(this).data();
+        }
+    });
+});
+
+window.MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$']]
+    }
+};
+
 $(document).on('click', '#getProfileData', function () {
     const $button = $(this);
     const $input = $('#playerInput');
@@ -75,20 +82,20 @@ $(document).on('click', '#getProfileData', function () {
     if (!playerId) {
         $input.val('')
             .attr('placeholder', 'Invalid player ID or profile URL')
-            .addClass('input-error')
+            .addClass('border-accent-red')
             .focus();
 
         setTimeout(() => {
             $input.attr('placeholder', originalPlaceholder)
-                .removeClass('input-error');
+                .removeClass('border-accent-red');
         }, 2000);
         return;
     }
 
-    $input.removeClass('input-error').attr('placeholder', originalPlaceholder);
-    $button.prop('disabled', true).html('<span class="btn-spinner"></span> Please wait...');
+    $input.removeClass('border-accent-red').attr('placeholder', originalPlaceholder);
+    $button.prop('disabled', true).html('<span class="inline-block w-4 h-4 border-2 border-dark-card-alt/20 border-t-white rounded-full animate-spin align-middle"></span> Please wait...');
 
-    const $hero = $('.optimal-hero');
+    const $hero = $('#hero-section');
 
     const formatNumber = (num) => {
         const truncated = Math.floor(num * 100) / 100;
@@ -97,39 +104,39 @@ $(document).on('click', '#getProfileData', function () {
     const formatInteger = num => Math.round(num).toLocaleString('en-US');
 
     const sectionWrapper = (inner, extraClass = '') => `
-        <div class="dynamic-section ${extraClass}">
+        <div class="dynamic-content mt-4 mb-6 ${extraClass}">
             ${inner}
         </div>
     `;
 
-    const sectionTitle = text => `<div class="section-title">${text}</div>`;
+    const sectionTitle = text => `<div class="text-xs uppercase tracking-widest text-dark-text-dim mb-2.5 font-semibold mt-5">${text}</div>`;
 
     fetch(`/get-summary?playerId=${encodeURIComponent(playerId)}`)
         .then(res => res.json())
         .then(data => {
-            $hero.find('.dynamic-section').remove();
+            $hero.find('.dynamic-content').remove();
             let sectionsHtml = '';
 
             if (data.company_breakdown && data.company_breakdown.length) {
                 const companyCards = data.company_breakdown.map(company => {
                     const stats = company.stats;
                     const netProfit = stats.avg_daily_net_profit || 0;
-                    const profitClass = netProfit >= 0 ? 'profit' : 'loss';
+                    const profitClass = netProfit >= 0 ? 'border-l-accent-green' : 'border-l-accent-red';
 
                     // Employee cards
                     let workersHtml = '';
                     if (company.workers && company.workers.length > 0) {
                         workersHtml = `
-                            <div class="section-title workers-title">Workers (${company.workers.length})</div>
-                            <div class="workers-section">
+                            <div class="text-xs uppercase tracking-widest text-dark-text-dim mt-4 mb-2.5 font-semibold">Workers (${company.workers.length})</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-2">
                                 ${company.workers.map(worker => `
-                                    <div class="employee-card">
-                                        <div class="employee-name">Worker Name: ${worker.name}</div>
-                                        <div>Current Wage: <strong>${formatNumber(worker.wage)}</strong> BTC</div>
-                                        <div>Energy: <strong>${worker.energy} ⚡</strong></div>
-                                        <div>Production: <strong>${worker.production} ⛏️</strong></div>
-                                        <div>Fidelity Level: <strong>${worker.fidelity} 💛</strong></div>
-                                        <div>Joined: <strong>${new Date(worker.joinedAt).toLocaleDateString()}</strong></div>
+                                    <div class="bg-dark-bg border border-dark-border rounded-md p-2.5">
+                                        <div class="font-semibold text-sm mb-2 pb-2 border-b border-dark-card-alt">Worker Name: ${worker.name}</div>
+                                        <div class="text-xs text-dark-text-muted mb-1">Current Wage: <strong class="text-dark-text">${formatNumber(worker.wage)}</strong> BTC</div>
+                                        <div class="text-xs text-dark-text-muted mb-1">Energy: <strong class="text-dark-text">${worker.energy} ⚡</strong></div>
+                                        <div class="text-xs text-dark-text-muted mb-1">Production: <strong class="text-dark-text">${worker.production} ⛏️</strong></div>
+                                        <div class="text-xs text-dark-text-muted mb-1">Fidelity Level: <strong class="text-dark-text">${worker.fidelity} 💛</strong></div>
+                                        <div class="text-xs text-dark-text-muted">Joined: <strong class="text-dark-text">${new Date(worker.joinedAt).toLocaleDateString()}</strong></div>
                                     </div>
                                 `).join('')}
                             </div>
@@ -161,66 +168,66 @@ $(document).on('click', '#getProfileData', function () {
                         });
 
                         const count = employeeData.workers.length || 1;
+                        const avgNetProfit = totals.netProfit / count;
 
                         dailyAveragesHtml = `
-                        <div class="stat-label">Daily Averages (All Workers)</div>
-                            <div class="company-stats-grid two-columns">
-                                
-                                <div class="stat-detail">Production Points: <strong>${formatInteger(totals.productionPoints / count)}</strong> PP/day ⛏️</div>
-                                <div class="stat-detail">Units Produced: <strong>${formatNumber(totals.unitsProduced / count)}</strong> units/day</div>
-                                <div class="stat-detail">Revenue Generated: <strong class="green">~${formatNumber(totals.revenue / count)}</strong> BTC/day</div>
-                                <div class="stat-detail">Wage Expenditure: <strong class="red">${formatNumber(totals.wage / count)}</strong> BTC/day</div>
-                                <div class="stat-detail">Net Profit: <strong class="${totals.netProfit / count >= 0 ? 'green' : 'red'}">${formatNumber(totals.netProfit / count)}</strong> BTC/day</div>
-                                <div class="stat-detail">Profit Margin: <strong>${formatNumber(totals.profitMargin / count)}</strong>%</div>
-                                <div class="stat-detail">Break-even Price: <strong>${formatNumber(totals.breakEven / count)}</strong> BTC/unit</div>
+                            <div class="text-dark-text-muted text-xs mb-2 mt-4">Daily Averages (All Workers)</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 py-3 mb-3 border-b border-dark-card-alt">
+                                <div class="text-dark-text-muted text-[10px]">Production Points: <strong class="text-dark-text">${formatInteger(totals.productionPoints / count)}</strong> PP/day ⛏️</div>
+                                <div class="text-dark-text-muted text-[10px]">Units Produced: <strong class="text-dark-text">${formatNumber(totals.unitsProduced / count)}</strong> units/day</div>
+                                <div class="text-dark-text-muted text-[10px]">Revenue Generated: <strong class="text-accent-green">~${formatNumber(totals.revenue / count)}</strong> BTC/day</div>
+                                <div class="text-dark-text-muted text-[10px]">Wage Expenditure: <strong class="text-accent-red">${formatNumber(totals.wage / count)}</strong> BTC/day</div>
+                                <div class="text-dark-text-muted text-[10px]">Net Profit: <strong class="${avgNetProfit >= 0 ? 'text-accent-green' : 'text-accent-red'}">${formatNumber(avgNetProfit)}</strong> BTC/day</div>
+                                <div class="text-dark-text-muted text-[10px]">Profit Margin: <strong class="text-dark-text">${formatNumber(totals.profitMargin / count)}</strong>%</div>
+                                <div class="text-dark-text-muted text-[10px]">Break-even Price: <strong class="text-dark-text">${formatNumber(totals.breakEven / count)}</strong> BTC/unit</div>
                             </div>
                         `;
                     }
 
                     return `
-                        <div class="company-card ${profitClass}">
-                            <div class="company-header">
-                                <img src="/static/img/${company.company.itemCode}.png" alt="${company.company.itemCode}" title="${company.company.itemCode}" class="company-icon">
-                                <p class="company-header-name">${company.company.name}</p>
-                                <small>Current Market Value: 1  = ${formatNumber(data.market_lookup[company.company.itemCode])} BTC</small>
+                        <div class="bg-dark-card border border-dark-card-alt rounded-lg p-3.5 mb-3 border-l-4 border-t-white ${profitClass}">
+                            <div class="flex items-center gap-2 mb-3 pb-3 border-b border-dark-card-alt text-sm">
+                                <img src="/static/img/${company.company.itemCode}.png" alt="${company.company.itemCode}" title="${company.company.itemCode}" class="w-6 h-6">
+                                <p class="uppercase font-bold">${company.company.name}</p>
+                                <small class="ml-auto">Current Market Value: 1  = ${formatNumber(data.market_lookup[company.company.itemCode])} BTC</small>
                             </div>
                             
-                            <div class="company-totals">
-                                <span>
+                            <div class="grid grid-cols-3 gap-3 py-3 mb-3 border-b border-dark-card-alt">
+                                <span class="flex flex-col gap-1 text-xs text-dark-text-dim uppercase tracking-wide">
                                     Avg Daily Revenue
-                                    <strong class="green">${formatNumber(stats.avg_daily_revenue_total)} BTC</strong>
+                                    <strong class="text-accent-green text-sm normal-case tracking-normal">${formatNumber(stats.avg_daily_revenue_total)} BTC</strong>
                                 </span>
-                                <span>
+                                <span class="flex flex-col gap-1 text-xs text-dark-text-dim uppercase tracking-wide">
                                     Avg Daily Wages
-                                    <strong class="red">${formatNumber(stats.avg_daily_wages_paid)} BTC</strong>
+                                    <strong class="text-accent-red text-sm normal-case tracking-normal">${formatNumber(stats.avg_daily_wages_paid)} BTC</strong>
                                 </span>
-                                <span>
+                                <span class="flex flex-col gap-1 text-xs text-dark-text-dim uppercase tracking-wide">
                                     Avg Potential Daily Profit
-                                    <strong class="${profitClass === 'profit' ? 'green' : 'red'}">${formatNumber(netProfit)} BTC</strong>
+                                    <strong class="${netProfit >= 0 ? 'text-accent-green' : 'text-accent-red'} text-sm normal-case tracking-normal">${formatNumber(netProfit)} BTC</strong>
                                 </span>
                             </div>
 
-                            <div class="company-stats-grid two-columns">
-                                <div class="stat-column">
-                                    <div class="stat-label">Avg Daily Production Points</div>
-                                    <div class="stat-detail">From Workers: <strong>${formatInteger(stats.avg_daily_employee_prod)} ⚡</strong></div>
-                                    <div class="stat-detail">From Self Work: <strong>${formatInteger(stats.avg_daily_self_work)} ⛏️</strong></div>
-                                    <div class="stat-detail">From Automation: <strong>${formatInteger(stats.avg_daily_automation_engine)} ⚙️</strong></div>
-                                    <div class="stat-total">Total: <strong>${formatInteger(stats.avg_daily_total_pp)} PP/day 💸</strong></div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 py-3 mb-3 border-b border-dark-card-alt">
+                                <div class="text-xs text-dark-text-dim">
+                                    <div class="mb-2">Avg Daily Production Points</div>
+                                    <div class="text-dark-text-muted text-[10px]">From Workers: <strong class="text-dark-text">${formatInteger(stats.avg_daily_employee_prod)} ⚡</strong></div>
+                                    <div class="text-dark-text-muted text-[10px]">From Self Work: <strong class="text-dark-text">${formatInteger(stats.avg_daily_self_work)} ⛏️</strong></div>
+                                    <div class="text-dark-text-muted text-[10px]">From Automation: <strong class="text-dark-text">${formatInteger(stats.avg_daily_automation_engine)} ⚙️</strong></div>
+                                    <div class="text-dark-text text-xs mt-1">Total: <strong>${formatInteger(stats.avg_daily_total_pp)} PP/day 💸</strong></div>
                                 </div>
-                                <div class="stat-column">
-                                    <div class="stat-label">Avg Daily Units Produced</div>
-                                    <div class="stat-detail">From Workers: <strong>${formatNumber(stats.avg_daily_units_employee)}  ⚡</strong></div>
-                                    <div class="stat-detail">From Self Work: <strong>${formatNumber(stats.avg_daily_units_self_work)}  ⛏️</strong></div>
-                                    <div class="stat-detail">From Automation: <strong>${formatNumber(stats.avg_daily_units_automation)} ⚙️</strong></div>
-                                    <div class="stat-total">Total: <strong>${formatNumber(stats.avg_daily_units_total)} units/day 💸</strong></div>
+                                <div class="text-xs text-dark-text-dim">
+                                    <div class="mb-2">Avg Daily Units Produced</div>
+                                    <div class="text-dark-text-muted text-[10px]">From Workers: <strong class="text-dark-text">${formatNumber(stats.avg_daily_units_employee)}  ⚡</strong></div>
+                                    <div class="text-dark-text-muted text-[10px]">From Self Work: <strong class="text-dark-text">${formatNumber(stats.avg_daily_units_self_work)}  ⛏️</strong></div>
+                                    <div class="text-dark-text-muted text-[10px]">From Automation: <strong class="text-dark-text">${formatNumber(stats.avg_daily_units_automation)} ⚙️</strong></div>
+                                    <div class="text-dark-text text-xs mt-1">Total: <strong>${formatNumber(stats.avg_daily_units_total)} units/day 💸</strong></div>
                                 </div>
                             </div>
 
-                            <div class="company-stats-grid three-columns">
-                                <div>From Workers<div class="stat-value">${formatNumber(stats.avg_daily_revenue_employee)} BTC/day</div></div>
-                                <div>From Self Work<div class="stat-value">${formatNumber(stats.avg_daily_revenue_self_work)} BTC/day</div></div>
-                                <div>From Automation<div class="stat-value">${formatNumber(stats.avg_daily_revenue_automation)} BTC/day</div></div>
+                            <div class="grid grid-cols-3 gap-3 text-xs text-dark-text-dim">
+                                <div>From Workers<div class="text-dark-text font-semibold text-xs mt-1">${formatNumber(stats.avg_daily_revenue_employee)} BTC/day</div></div>
+                                <div>From Self Work<div class="text-dark-text font-semibold text-xs mt-1">${formatNumber(stats.avg_daily_revenue_self_work)} BTC/day</div></div>
+                                <div>From Automation<div class="text-dark-text font-semibold text-xs mt-1">${formatNumber(stats.avg_daily_revenue_automation)} BTC/day</div></div>
                             </div>
 
                             ${workersHtml}
@@ -232,7 +239,7 @@ $(document).on('click', '#getProfileData', function () {
                 sectionsHtml += sectionWrapper(`
                     ${sectionTitle('Company overview')}
                     ${companyCards}
-                `);
+                `, "p2 max-h-[500px] overflow-auto");
             }
 
             // Summary section
@@ -243,49 +250,49 @@ $(document).on('click', '#getProfileData', function () {
                 const totalCompanies = data.company_breakdown.length;
                 const totalWorkers = data.employee_breakdown?.reduce((sum, eb) => sum + (eb.workers?.length || 0), 0) || 0;
 
-                const profitClass = totalNetProfit >= 0 ? 'green' : 'red';
+                const profitClass = totalNetProfit >= 0 ? 'text-accent-green' : 'text-accent-red';
 
                 sectionsHtml = sectionWrapper(`
                     ${sectionTitle('Summary')}
-                    <div class="summary-grid">
-                        <div class="summary-card">
-                            <div class="summary-label">Total Companies</div>
-                            <div class="summary-value">${totalCompanies}</div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Total Companies</div>
+                            <div class="text-2xl font-bold">${totalCompanies}</div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Total Workers</div>
-                            <div class="summary-value">${totalWorkers}</div>
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Total Workers</div>
+                            <div class="text-2xl font-bold">${totalWorkers}</div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Avg Daily Revenue</div>
-                            <div class="summary-value ${profitClass}">${formatNumber(totalRevenue)}</div>
-                            <div class="summary-subvalue">BTC/day</div>
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Avg Daily Revenue</div>
+                            <div class="text-2xl font-bold ${profitClass}">${formatNumber(totalRevenue)}</div>
+                            <div class="text-[10px] text-dark-text-dim mt-0.5">BTC/day</div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Avg Daily Wages paid</div>
-                            <div class="summary-value red">${formatNumber(totalWages)}</div>
-                            <div class="summary-subvalue">BTC/day</div>
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Avg Daily Wages paid</div>
+                            <div class="text-2xl font-bold text-accent-red">${formatNumber(totalWages)}</div>
+                            <div class="text-[10px] text-dark-text-dim mt-0.5">BTC/day</div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Avg Daily Profit</div>
-                            <div class="summary-value ${profitClass}">${formatNumber(totalNetProfit)}</div>
-                            <div class="summary-subvalue">BTC/day</div>
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Avg Daily Profit</div>
+                            <div class="text-2xl font-bold ${profitClass}">${formatNumber(totalNetProfit)}</div>
+                            <div class="text-[10px] text-dark-text-dim mt-0.5">BTC/day</div>
                         </div>
-                        <div class="summary-card">
-                            <div class="summary-label">Daily wage earn from work</div>
-                            <div class="summary-value green">${formatNumber(data.job_breakdown.average_daily_wage_earn)}</div>
-                            <div class="summary-subvalue">BTC/day</div>
+                        <div class="text-center">
+                            <div class="text-xs text-dark-text-dim uppercase tracking-wide mb-2">Daily wage earn from work</div>
+                            <div class="text-2xl font-bold text-accent-green">${formatNumber(data.job_breakdown.average_daily_wage_earn)}</div>
+                            <div class="text-[10px] text-dark-text-dim mt-0.5">BTC/day</div>
                         </div>
                     </div>
-                `, 'centered') + sectionsHtml;
+                `, 'text-center') + sectionsHtml;
             }
 
             $hero.append(sectionsHtml);
         })
         .catch(err => {
             console.error('Error:', err);
-            $hero.find('.dynamic-section').remove();
-            $hero.append(`<div class="dynamic-section error">Failed to fetch player data. Please try again.</div>`);
+            $hero.find('.dynamic-content').remove();
+            $hero.append(`<div class="dynamic-content mt-4 p-3 bg-dark-bg border border-accent-red rounded-lg text-accent-red text-center text-sm">Failed to fetch player data. Please try again.</div>`);
         })
         .finally(() => {
             $button.prop('disabled', false).text(buttonText);
@@ -294,7 +301,7 @@ $(document).on('click', '#getProfileData', function () {
 
 document.addEventListener("DOMContentLoaded", function () {
     setTimeout(() => {
-        const target = document.querySelector('.green-border, .red-border');
+        const target = document.querySelector('.border-accent-green.border-2, .border-accent-red.border-2');
         if (target) {
             target.scrollIntoView({
                 behavior: 'smooth',
@@ -304,20 +311,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 300);
 });
 
-
 window.addEventListener('load', function() {
     const loadingOverlay = document.getElementById('loading-overlay');
     
-    loadingOverlay.classList.add('fade-out');
+    loadingOverlay.classList.add('animate-fade-out');
     
     setTimeout(function() {
         loadingOverlay.style.display = 'none';
     }, 300);
 });
+
 setTimeout(function() {
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay && loadingOverlay.style.display !== 'none') {
-        loadingOverlay.classList.add('fade-out');
+        loadingOverlay.classList.add('animate-fade-out');
         setTimeout(function() {
             loadingOverlay.style.display = 'none';
         }, 300);
