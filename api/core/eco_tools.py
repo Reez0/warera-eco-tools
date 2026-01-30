@@ -317,3 +317,15 @@ def store_daily_wage_snapshot():
     except Exception as e:
         if "E11000" not in str(e):
             raise
+        
+def get_weekly_wage_snapshot():
+    collection = get_wage_collection()
+    try:
+        results = list(
+            collection.find({}).sort("day", 1).limit(7)
+        )
+        return results
+    except Exception as e:
+        if "E11000" not in str(e):
+            return None
+        

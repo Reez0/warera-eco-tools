@@ -330,3 +330,90 @@ setTimeout(function() {
         }, 300);
     }
 }, 30000);
+
+function loadChart(chartData) {
+if (!chartData) {
+return 
+}
+const labels = chartData.map(d => d.day);
+
+const ctx = document.getElementById("wageChart").getContext("2d");
+
+new Chart(ctx, {
+  type: "line",
+  data: {
+    labels,
+    datasets: [
+      {
+        label: "Allowed Avg",
+        data: chartData.map(d => d.allowedAvg),
+        borderColor: "#4ade80",
+        backgroundColor: "rgba(74,222,128,0.15)",
+        tension: 0.35,
+        fill: true,
+        pointRadius: 0,
+        borderWidth: 2
+      },
+      {
+        label: "Allowed Min",
+        data: chartData.map(d => d.allowedMin),
+        borderColor: "#888",
+        borderDash: [4, 4],
+        tension: 0.35,
+        pointRadius: 0
+      },
+      {
+        label: "Allowed Max",
+        data: chartData.map(d => d.allowedMax),
+        borderColor: "#888",
+        borderDash: [4, 4],
+        tension: 0.35,
+        pointRadius: 0
+      },
+      {
+        label: "Top Offer",
+        data: chartData.map(d => d.topOffer),
+        borderColor: "#facc15",
+        tension: 0.35,
+        pointRadius: 3,
+        pointHoverRadius: 5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: {
+          color: "#888",
+          font: { size: 12 }
+        }
+      },
+      tooltip: {
+        backgroundColor: "#0a0a0a",
+        borderColor: "#222",
+        borderWidth: 1,
+        titleColor: "#fff",
+        bodyColor: "#ccc",
+        padding: 12
+      }
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: "#666" }
+      },
+      y: {
+        grid: {
+          color: "rgba(255,255,255,0.05)"
+        },
+        ticks: {
+          color: "#666",
+          callback: v => v.toFixed(3)
+        }
+      }
+    }
+  }
+});
+}

@@ -1,7 +1,7 @@
 from threading import Lock
 
 from flask import Flask, jsonify, request, render_template
-from .core.eco_tools import gather_data, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot
+from .core.eco_tools import gather_data, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot,get_weekly_wage_snapshot
 from .core.warera_api import get_item_trading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -34,7 +34,18 @@ def home():
     try:
         country_data, market_data, deposit_count = gather_data()
         winner, loser = get_biggest_winner_loser(market_data)
-
+        snapshot = get_weekly_wage_snapshot()
+        chart_data = [
+            {
+                "day": d["day"].strftime("%Y-%m-%d"),
+                "allowedMin": d["allowedMin"],
+                "allowedMax": d["allowedMax"],
+                "allowedAvg": round(d["allowedAvg"], 4),
+                "topOffer": d["topOffer"],
+                "topEligibleOffer": d["topEligibleOffer"],
+            }
+            for d in snapshot
+        ]
         context = {
             "data": country_data,
             "market_data": market_data,
@@ -42,10 +53,11 @@ def home():
             "item_icons": ITEM_ICONS,
             "winner": winner,
             "loser": loser,
+            "wage_snapshot": chart_data
         }
-
+    
         store_daily_wage_snapshot()
-
+        
         return render_template("index.html", **context)
 
     except Exception as e:
@@ -84,5 +96,3 @@ def get_summary():
     finally:
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
-        
-
