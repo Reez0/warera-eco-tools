@@ -7,6 +7,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon_io/apple-touch-icon.png') }}">
@@ -33,12 +34,12 @@
         </header>
 
         <!-- Hero Section -->
-        <div id="hero-section" class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-12 mb-10 relative overflow-hidden">
+        <div id="hero-section" class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-3 mb-10 relative overflow-hidden">
             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
             
             <!-- Market Trends -->
-            <div class="uppercase tracking-widest text-dark-text-dim mb-4 font-semibold">📈 Market Trends</div>
-            <small class="tracking-wider text-dark-text-dim block mb-6">7-day market trends, and trading activity across all resources</small>
+            <h3 class="uppercase tracking-widest text-dark-text-dim mb-4 font-semibold">📈 Market Trends</h3>
+            <p class="tracking-wider text-dark-text-dim block mb-6">7-day market trends, and trading activity across all resources</p>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar mb-8">
                 {% for item in market_data %}
@@ -132,28 +133,16 @@
         
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
             <!-- Market Prices -->
             <div class="bg-dark-card border border-dark-border rounded-xl p-8 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5">
                 <h3 class="text-base font-semibold uppercase tracking-wide flex items-center gap-2 mb-6">
-                    💰 Market Pricing (7 days) <small class="text-sm normal-case">Click to view</small>
+                    💰 Wage trends (7 days)
                 </h3>
                 <div class="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar">
-                    {% for market in market_data %}
-                    <div class="flex justify-between items-center py-3 border-b border-dark-card-alt last:border-b-0 cursor-pointer" 
-                         onclick="window.open('https://app.warera.io/market/trading?itemCode={{ market.item }}', '_blank').focus();">
-                        <span class="text-dark-text-muted text-sm flex items-center gap-2">
-                            <img src="{{ url_for('static', filename=item_icons[market.item]) }}" alt="{{ market.item }}" title="{{ market.item }}" class="w-5 h-5">
-                        </span>
-                        <div class="flex flex-col gap-1 items-end">
-                            <div class="flex gap-2 items-center text-sm">
-                                <span class="text-dark-text-dim text-xs">Price change:</span>
-                                <span class="font-semibold {% if market.price_change_pct_7day >= 0 %}text-accent-green{% else %}text-accent-red{% endif %}">
-                                    {{ ('+' if market.price_change_pct_7day >= 0 else '') ~ market.price_change_pct_7day }}
-                                </span>
-                            </div>
-                        </div>
+                    <div class="relative w-full h-100">
+                        <canvas style="height:320px" id="wageChart"></canvas>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
 
@@ -182,5 +171,9 @@
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+                <script>
+                const chartData = {{ wage_snapshot | tojson }};
+                loadChart(chartData)
+            </script>
 </body>
 </html>
