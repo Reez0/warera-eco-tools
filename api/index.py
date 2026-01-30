@@ -96,3 +96,7 @@ def get_summary():
     finally:
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
+        
+@app.route("/health")
+def health():
+    return {"status": "ok"}
