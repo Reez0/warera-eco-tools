@@ -29,7 +29,15 @@ ITEM_ICONS = {
     "steel": "img/steel.png"
 }
 
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
 @app.route("/")
+def loading_page():
+    return render_template("loading.html")
+
+@app.route("/app")
 def home():
     try:
         country_data, market_data, deposit_count = gather_data()
@@ -97,6 +105,3 @@ def get_summary():
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
         
-@app.route("/health")
-def health():
-    return {"status": "ok"}
