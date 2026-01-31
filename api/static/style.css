@@ -1027,4 +1027,9 @@ table.dataTable tbody tr:hover {
   #getProfileData {
     width:100%;
   }
+
+  td {
+    text-wrap: auto !important;
+  }
+
 }
