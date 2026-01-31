@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Warera Eco Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       display: flex;
@@ -13,28 +14,36 @@
       color: #fff;
       font-family: sans-serif;
       flex-direction: column;
+      padding: 1rem;
+      text-align: center;
     }
-    .spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #333;
-      border-top-color: #4ade80;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+
+    .loader-gif {
+      width: clamp(72px, 20vw, 140px);
+      height: auto;
+      margin-bottom: 1rem;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+
+    small {
+      font-size: clamp(0.8rem, 2.5vw, 1rem);
+      opacity: 0.85;
     }
   </style>
 </head>
 <body>
-  <div class="spinner"></div>
-  <p>Waking up the server… please wait</p>
+
+  <img
+    class="loader-gif"
+    src="https://media1.tenor.com/m/LOQ-xYpicD8AAAAd/hodl-pepe-pepe-loop.gif"
+    alt="Loading"
+    loading="eager"
+  />
+
+  <h4>Starting instance</h4>
+  <small>Please wait</small>
 
 <script>
 async function waitForAPI() {
-    const spinner = document.getElementById("loading-spinner");
     let ready = false;
     while (!ready) {
         try {
@@ -53,5 +62,6 @@ async function waitForAPI() {
 
 waitForAPI();
 </script>
+
 </body>
 </html>
