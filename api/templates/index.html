@@ -43,6 +43,15 @@
                             <span class="text-xs text-dark-text-dim uppercase tracking-wider">7-day Price change</span>
                             <span class="text-sm font-semibold {% if item['price_change_pct_7day'] > 0 %}text-accent-green{% else %}text-accent-red{% endif %}">
                                 {% if item['price_change_pct_7day'] > 0 %}+{% endif %}{{ "%.2f"|format(item['price_change_pct_7day']) }}%
+                                ({{item.first_day}} ➡️ {{item.last_day}}) 
+                            </span>
+
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-dark-text-dim uppercase tracking-wider">Last 24 hours</span>
+                            <span class="text-sm font-semibold {% if item['price_change_pct_24h'] > 0 %}text-accent-green{% else %}text-accent-red{% endif %}">
+                                {% if item['price_change_pct_24h'] > 0 %}+{% endif %}{{ "%.2f"|format(item['price_change_pct_24h']) }}%
+                                ({{item.previous_day}} ➡️ {{item.last_day}}) 
                             </span>
                         </div>
                         <div class="flex justify-between items-center">
@@ -111,9 +120,12 @@
                         <td class="p-4">
                             {% if country.max_bonus_applies.value %}
                                 {{ country.max_bonus_applies.value }}%
-                            {% else %}
-                                30%
+                            {% elif country.production_bonus > 30 %}
+                                    {{country.production_bonus}}%
+                            {%else%}
+                            30%
                             {% endif %}
+                            
                         </td>
                     </tr>
                     {% endfor %}

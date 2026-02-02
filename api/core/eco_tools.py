@@ -239,19 +239,23 @@ def summarize_market_data(item_trading):
 
         if len(stats) < 2:
             continue
-
         first_day = stats[0]["avgValue"]
         last_day = stats[-1]["avgValue"]
+        previous_day = stats[-2]["avgValue"]
         price_change_pct = (last_day - first_day) / first_day * 100
-
+        price_change_pct_24h = (last_day - previous_day) / previous_day * 100
         avg_daily_transactions = sum(d["transactionsCount"] for d in stats) / len(stats)
         avg_daily_quantity = sum(d["totalQuantity"] for d in stats) / len(stats)
 
         summary.append({
             "item": item,
             "price_change_pct_7day": round(price_change_pct, 2),
+            "price_change_pct_24h": round(price_change_pct_24h,2),
             "avg_daily_transactions": round(avg_daily_transactions, 1),
-            "avg_daily_quantity": round(avg_daily_quantity, 1)
+            "avg_daily_quantity": round(avg_daily_quantity, 1),
+            "first_day": round(first_day,3),
+            "last_day": round(last_day,3),
+            "previous_day": round(previous_day,3)
         })
 
     summary.sort(key=lambda x: x["avg_daily_transactions"], reverse=True)
