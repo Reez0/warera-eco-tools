@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon_io/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon_io/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon_io/favicon-16x16.png') }}">
+    <title>{{ country }} - Users | Warera Eco Tools</title>
+</head>
+<body class="bg-dark-bg text-dark-text min-h-screen leading-normal">    
+    <div class="max-w-7xl mx-auto px-5">
+        <!-- Header -->
+        <header class="py-10 border-b border-dark-border mb-10">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tight mb-2 gradient-text">{{ data.country.name }}</h1>
+                    <p class="text-dark-text-muted text-base">Country citizens and workforce overview</p>
+                </div>
+                <a href="/" class="text-dark-text-muted hover:text-dark-text transition-colors text-sm uppercase tracking-wide">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </header>
+
+        <!-- Country Stats Overview -->
+        <div class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-8 mb-10 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
+            
+            <h3 class="uppercase tracking-widest text-dark-text-dim mb-6 font-semibold">📊 Country Overview</h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+                    <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-2">Total Active Citizens</div>
+                    <div class="text-2xl font-bold">{{ data.counts.active_count }}</div>
+                </div>
+
+                <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+                    <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-2">Average Wealth</div>
+                    <div class="text-2xl font-bold text-accent-green">{{ data.average_wealth }}</div>
+                </div>
+
+                <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+                    <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-2">Skill Distribution</div>
+                    <div class="text-2xl font-bold text-dark-text-dim"><span>War: </span>{{ data.counts.war }}</div>
+                    <div class="text-2xl font-bold text-dark-text-dim"><span>Economy: </span>{{ data.counts.eco }}</div>
+                    <div class="text-2xl font-bold text-dark-text-dim"><span>Hybrid: </span>{{ data.counts.hybrid }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
+            <h2 class="text-base font-semibold uppercase tracking-wide mb-2">
+                Citizens Directory 
+                <small class="text-sm normal-case text-dark-text-muted">Click row to view profile</small>
+            </h2>
+            
+            <table id="usersTable" class="display nowrap w-full">
+                <thead>
+                    <tr>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Username</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Level</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Total Damage</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Wealth</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Bounty Collected</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">MU</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Current Build</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in data.users %}
+                    <tr class="border-b border-dark-card-alt text-sm cursor-pointer hover:bg-dark-card-alt transition-colors {% if user.is_banned %}border-l-4 border-l-accent-red{% endif %}" 
+                        data-username="{{ user.username }}"
+                        data-user-id="{{ user.user_id }}">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                {% if user.avatar %}
+                                <img src="{{ user.avatar }}" alt="{{ user.username }}" class="w-8 h-8 rounded-full">
+                                {% else %}
+                                <div class="w-8 h-8 rounded-full bg-dark-card-alt flex items-center justify-center">
+                                    <span class="text-xs font-bold">{{ user.username[0]|upper }}</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="font-semibold">{{ user.username }}</div>
+                                    {% if user.is_banned %}
+                                    <div class="text-xs text-accent-red uppercase">Banned</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <span class="inline-block bg-dark-card-alt px-2.5 py-1 rounded text-xs font-semibold">
+                                {{ user.level }}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ "{:,.0f}".format(user.total_dmg) }}</span>
+                        </td>
+                        <td class="p-4">
+                            {% if user.wealth > 0 %}
+                                <span class="font-semibold text-accent-green">{{ user.wealth }}</span>
+                            {% else %}
+                                <span class="text-dark-text-dim">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ "{:,.0f}".format(user.bounty_collected) }}</span>
+                        </td>
+                        <td class="p-4">
+                            {% if user.mu %}
+                                <span class="text-dark-text-muted">{{ user.mu }}</span>
+                            {% else %}
+                                <span class="text-dark-text-dim">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ user.build_type}}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-dark-text-subtle py-10 border-t border-dark-border mt-16 text-sm">
+            <p>Warera Eco Tools</p>
+            <p>Suggestions? Find me <a href="https://app.warera.io/user/68e563d741440cb58b76a7b9" class="hover:text-dark-text-muted transition-colors">here</a></p>
+        </footer>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const table = $('#usersTable').DataTable({
+                order: [[1, 'desc']], // Sort by level descending by default
+                pageLength: 25,
+                responsive: true,
+                language: {
+                    search: "Search citizens:",
+                    lengthMenu: "Show _MENU_ citizens per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ citizens",
+                    infoEmpty: "No citizens found",
+                    infoFiltered: "(filtered from _MAX_ total citizens)"
+                }
+            });
+
+            // Add click handler to open user profiles
+            $('#usersTable tbody').on('click', 'tr', function() {
+                const userId = $(this).data('user-id');
+                if (userId) {
+                    window.open(`https://app.warera.io/user/${userId}`, '_blank').focus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

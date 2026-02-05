@@ -7,17 +7,37 @@ from .warera_api import (
     get_stats_by_worker,
     get_stats_by_company,
     get_user_profile_info,
-    get_wage_stats
+    get_wage_stats,
+    get_user_by_country
 )
 import os
 from datetime import datetime, timezone
 from pymongo import MongoClient, ASCENDING
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 _client = None
 _collection = None
 
 executor = ThreadPoolExecutor(max_workers=4)
+
+WAR_SKILLS = {
+    "attack",
+    "precision",
+    "criticalChance",
+    "criticalDamages",
+    "health",
+    "armor",
+    "dodge",
+    "hunger",
+}
+
+ECO_SKILLS = {
+    "energy",
+    "entrepreneurship",
+    "production",
+    "companies",
+    "management",
+}
 
 WORK_MAP = {
     "lightAmmo": {"quantity": 1, "work": 1},
@@ -295,6 +315,27 @@ def get_wage_collection():
 
     return _collection
 
+def get_country_collection():
+    global _client, _collection
+
+    if _collection is None:
+        uri = (
+            f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+            f"{os.environ['MONGO_DB_PASSWORD']}"
+            "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+        )
+
+        _client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+        )
+
+        db = _client["warera_market"]
+        _collection = db["countries"]
+
+    return _collection
+
 def store_daily_wage_snapshot():
     collection = get_wage_collection()
     wage_data = get_wage_stats()
@@ -332,4 +373,122 @@ def get_weekly_wage_snapshot():
     except Exception as e:
         if "E11000" not in str(e):
             return None
+
+def get_country_mapping():
+    collection = get_country_collection()
+    try:
+        results = list(
+            collection.find({})
+        )
+        return results
+    except Exception as e:
+        if "E11000" not in str(e):
+            return None
+        
+def skill_points(level: int) -> int:
+    """
+    Converts a skill level to total points invested.
+    Level 0 -> 0 points
+    Level 10 -> 55 points
+    """
+    return level * (level + 1) // 2
+
+def calculate_investment(skills: dict) -> tuple[int, int]:
+    war_points = 0
+    eco_points = 0
+
+    for skill_name, skill_data in skills.items():
+        level = skill_data.get("level", 0)
+        points = skill_points(level)
+
+        if skill_name in WAR_SKILLS:
+            war_points += points
+        elif skill_name in ECO_SKILLS:
+            eco_points += points
+
+    return war_points, eco_points
+
+def categorize_build(skills: dict) -> str:
+    war_points, eco_points = calculate_investment(skills)
+
+    if war_points == 0 and eco_points == 0:
+        return "Unassigned"
+
+    if war_points == 0:
+        return "Economy"
+
+    if eco_points == 0:
+        return "War"
+
+    total = war_points + eco_points
+    war_ratio = war_points / total
+    eco_ratio = eco_points / total
+
+    if war_ratio >= 0.65:
+        return "War"
+    elif eco_ratio >= 0.65:
+        return "Economy"
+    else:
+        return "Hybrid"
+
+def build_country_breakdown(country):
+    try:
+        executor = ThreadPoolExecutor(max_workers=20)
+        user_list = get_user_by_country(country['country_id'])
+        country_users = []
+
+        def fetch_user_data(user):
+            user_data = {}
+            user_info = get_user_profile_info(user['_id'])
+            user_data['level'] = user_info['leveling']['level']
+            user_data['skills'] = user_info['skills']
+            user_data['joined'] = user_info['createdAt']
+            user_data['mu'] = user_info.get('mu', None)
+            user_data['is_banned'] = user_info.get('infos',{}).get('isBanned',False)
+            if user_info['isActive']:
+                user_data['is_active'] = True
+            else:
+                user_data['is_active'] = False
+            rankings = user_info.get('rankings', {})
+            user_data['total_dmg'] = rankings.get('userDamages', {}).get('value', 0)
+            user_data['wealth'] = rankings.get('userWealth', {}).get('value', 0)
+            user_data['bounty_collected'] = rankings.get('userBounty', {}).get('value', 0)
+            user_data['username'] = user_info.get('username')
+            user_data['avatar'] = user_info.get('avatarUrl',None)
+            return user_data
+
+        with executor:
+            futures = [executor.submit(fetch_user_data, user) for user in user_list]
+            for future in as_completed(futures):
+                user_data = future.result()
+                country_users.append(user_data)
+                
+        war_count = 0
+        hybrid_count = 0
+        eco_count = 0
+        for user in country_users:
+            user['build_type'] = categorize_build(user['skills'])
+            if user['build_type'] == 'War':
+                war_count+=1
+            if user['build_type'] == 'Economy':
+                eco_count+=1
+            if user['build_type'] == 'Hybrid':
+                hybrid_count+=1
+        total_wealth = sum(user['wealth'] for user in country_users)
+        user_count = len(country_users)
+        average_wealth = total_wealth / user_count if user_count > 0 else 0
+        
+        data = {'country': country['name'], 'users': country_users, 
+                'counts': {
+                    'active_count': len(country_users),
+                    'war': war_count,
+                    'eco': eco_count,
+                    'hybrid': hybrid_count
+                    },
+                'average_wealth': round(average_wealth,2)
+                }
+        
+        return data
+    except Exception as e:
+        raise
         

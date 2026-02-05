@@ -1,7 +1,17 @@
 from threading import Lock
 
 from flask import Flask, jsonify, request, render_template
-from .core.eco_tools import gather_data, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot,get_weekly_wage_snapshot
+from .core.eco_tools import (gather_data, 
+                             company_breakdown, 
+                             employee_breakdown, 
+                             job_breakdown, 
+                             build_market_lookup, 
+                             get_biggest_winner_loser, 
+                             store_daily_wage_snapshot,
+                             get_weekly_wage_snapshot,
+                             get_country_mapping,
+                             build_country_breakdown
+                             )
 from .core.warera_api import get_item_trading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -104,4 +114,28 @@ def get_summary():
     finally:
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
+
+@app.route("/country/<country_code>")
+def get_country_breakdown(country_code):
+    try:
+        countries = get_country_mapping()
+        for country in countries:
+            if country['code'] == country_code:
+                country_breakdown = build_country_breakdown(country)
+        context = {
+            'data': country_breakdown
+        }
+        return render_template(
+            "country.html",**context
+        )
         
+    except Exception as e:
+        log_exception(
+            e,
+            function="/country",
+            service="index",
+        )
+        return render_template(
+            "error.html",
+            error_message="Unable to find that country. Please try again.",
+        )

@@ -418,6 +418,50 @@ def get_item_trading():
         )
         raise Exception(f'Unable to retrieve item trading: {e}')  
     
+def get_user_by_country(country_id):
+    try:
+        base_url = "https://api2.warera.io/trpc/user.getMe,user.getUsersByCountry?batch=1&"
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+        }
+
+        all_data = []
+        cursor = None
+
+        while True:
+            if cursor:
+                payload = f'''input={{
+                    "1": {{"countryId":"{country_id}","cursor":"{cursor}"}},
+                    "direction": "forward"
+                }}'''
+            else:
+                payload = f'''input={{
+                    "1": {{"countryId":"{country_id}"}},
+                    "direction": "forward"
+                }}'''
+
+            url = base_url + payload
+
+            response = requests.get(url, headers=headers, allow_redirects=False)
+            data = response.json()
+
+            user_list = data[1]['result']['data']['items']
+            all_data.extend(user_list)
+
+            cursor = data[1]['result']['data'].get('nextCursor')
+            if not cursor:
+                break
+
+        return all_data
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_user_profile_info",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve stats by company: {e}') 
+    
 def get_workers(player_id):
     try:
         url = "https://api2.warera.io/trpc/worker.getWorkers?batch=1&"
@@ -439,4 +483,4 @@ def get_workers(player_id):
             function="get_workers",
             service="warera_api",
         )
-        raise Exception(f'Unable to retrieve stats by worker {e}')  
+        raise Exception(f'Unable to retrieve stats by worker {e}')
