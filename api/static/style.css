@@ -1033,3 +1033,24 @@ table.dataTable tbody tr:hover {
   }
 
 }
+
+.dataTables_scrollBody {
+    position: relative; /* ensure ::after is positioned correctly */
+}
+
+.dataTables_scrollBody::after {
+    content: '→';           /* tiny arrow */
+    position: absolute;
+    right: 8px;             /* distance from right edge */
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.3);
+    pointer-events: none;   /* don’t block scrolling */
+    transition: opacity 0.3s;
+}
+
+/* Hide arrow when scrolled all the way */
+.dataTables_scrollBody.scrolled::after {
+    opacity: 0;
+}

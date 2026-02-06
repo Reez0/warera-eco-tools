@@ -1,0 +1,44 @@
+{%include 'partials/header.html'%}
+<body class="bg-dark-bg text-dark-text min-h-screen leading-normal">    
+    <div class="max-w-7xl mx-auto px-5">
+        <!-- Header -->
+        <header class="py-10 border-b border-dark-border mb-10">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <h1 class="text-4xl font-bold tracking-tight mb-2">Country Selection</h1>
+                    <p class="text-dark-text-muted text-base">Choose a country to view detailed citizen information</p>
+                </div>
+                <a href="/app/" class="text-dark-text-muted hover:text-dark-text transition-colors text-sm uppercase tracking-wide">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </header>
+
+        <div class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-8 mb-10 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
+            
+            <h3 class="uppercase tracking-widest text-dark-text-dim mb-6 font-semibold">🌍 Select Country</h3>
+            
+            <div class="max-w-2xl mx-auto">
+                <form id="countryForm" class="flex flex-col gap-4">
+                    <div>
+                        <label for="countries" class="block text-sm text-dark-text-muted uppercase tracking-wider mb-3">
+                            Choose a country:
+                        </label>
+                        <select 
+                            name="countries" 
+                            id="countries" 
+                            class="w-full bg-dark-bg border border-dark-border-light rounded-lg px-4 py-3.5 text-base transition-colors focus:outline-none focus:border-dark-text-dim cursor-pointer">
+                            <option value="" disabled selected>Select a country...</option>
+                            {% for country in countries %}
+                            <option value="{{ country.code }}">{{ country.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+{% include 'partials/footer.html' %}
+</body>
+</html>

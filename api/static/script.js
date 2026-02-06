@@ -398,3 +398,46 @@ new Chart(ctx, {
   }
 });
 }
+
+$(document).ready(function() {
+    const table = $('#usersTable').DataTable({
+        order: [[1, 'desc']],
+        scrollX: true,
+        autoWidth: false,
+        pageLength: 25,
+        language: {
+            search: "Search citizens:",
+            lengthMenu: "Show _MENU_ citizens per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ citizens",
+            infoEmpty: "No citizens found",
+            infoFiltered: "(filtered from _MAX_ total citizens)"
+        }
+    });
+
+    $('#usersTable tbody').on('click', 'tr', function() {
+        const userId = $(this).data('user-id');
+        if (userId) {
+            window.open(`https://app.warera.io/user/${userId}`, '_blank').focus();
+        }
+    });
+});
+
+const countryForm = document.getElementById('countryForm');
+const countrySelect = document.getElementById('countries');
+
+countryForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const countryCode = countrySelect.value;
+    if (countryCode) {
+        window.location.href = `/app/country/${countryCode}`;
+    }
+});
+
+countrySelect.addEventListener('change', function() {
+    if (this.value) {
+        window.location.href = `/app/country/${this.value}`;
+    }
+});
+
+
+

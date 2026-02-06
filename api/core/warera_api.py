@@ -457,10 +457,10 @@ def get_user_by_country(country_id):
     except Exception as e:
         log_exception(
             e,
-            function="get_user_profile_info",
+            function="get_user_by_country",
             service="warera_api",
         )
-        raise Exception(f'Unable to retrieve stats by company: {e}') 
+        raise Exception(f'Unable to retrieve user by company: {e}') 
     
 def get_workers(player_id):
     try:
