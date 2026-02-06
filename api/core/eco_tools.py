@@ -287,15 +287,13 @@ def job_breakdown(player_id):
     return job_detail
 
 
-def ensure_index(collection_name):
+def ensure_index(collection_name, collection):
     if collection_name == 'country_breakdown':
-        collection = get_collection(collection_name)
         collection.create_index(
             [("country.country_code", ASCENDING)],
             unique=True
         )
     if collection_name == 'wage_data':
-        collection = get_collection(collection_name)
         collection.create_index(
         [("day", ASCENDING)],
         unique=True
@@ -316,7 +314,7 @@ def get_collection(collection_name):
 
     db = _client["warera_market"]
     _collection = db[collection_name]
-    ensure_index(collection_name)
+    ensure_index(collection_name,_collection)
     return _collection
 
 
