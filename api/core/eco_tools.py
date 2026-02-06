@@ -404,7 +404,7 @@ def get_country_mapping():
     collection = get_country_collection()
     try:
         results = list(
-            collection.find({})
+            collection.find({}).sort('name',1)
         )
         return results
     except Exception as e:
