@@ -4,3 +4,4 @@ venv/
 .env*.local
 .env/
 *.pyc
+*task.py

@@ -1,0 +1,160 @@
+{%include 'partials/header.html'%}
+<body class="bg-dark-bg text-dark-text min-h-screen leading-normal">    
+    <div class="max-w-7xl mx-auto px-5">
+        <header class="py-10 border-b border-dark-border mb-10">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                    <img src="https://app.warera.io/images/flags/{{data.country.country_code}}.svg?v=16" alt="{{data.country.country_code}}" class="w-8 h-8">
+                    <h1 class="text-4xl font-bold tracking-tight mb-2">{{ data.country.country_name }}</h1>
+                    <p class="text-dark-text-muted text-base">Country overview</p>
+                </div>
+                <a href="/app/country/" class="text-dark-text-muted hover:text-dark-text transition-colors text-sm uppercase tracking-wide">
+                    ← Choose another country
+                </a>
+            </div>
+        </header>
+
+<div class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-8 mb-10 relative overflow-hidden">
+    <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
+    
+    <h3 class="uppercase tracking-widest text-dark-text-dim mb-6 font-semibold">📊 Country Overview <small>Last updated: {{data.timestamp}}</small></h3>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-6">
+        <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+            <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-2">Total Active Citizens</div>
+            <div class="text-2xl font-bold">{{ data.counts.active_count }}</div>
+        </div>
+        <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+            <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-2">Average Citizen Wealth</div>
+            <div class="text-2xl font-bold text-accent-green">{{ data.average_wealth }} BTC</div>
+        </div>
+
+    </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+                    <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-3">Skill Distribution</div>
+                    <div class="flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between pb-2 border-b border-dark-card-alt">
+                            <span class="text-sm text-dark-text-muted">⚔️ War Focused</span>
+                            <span class="text-base font-semibold">{{ data.counts.war }}</span>
+                        </div>
+                        <div class="flex items-center justify-between pb-2 border-b border-dark-card-alt">
+                            <span class="text-sm text-dark-text-muted">💼 Economy Focused</span>
+                            <span class="text-base font-semibold">{{ data.counts.eco }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-dark-text-muted">⚡ Hybrid Build</span>
+                            <span class="text-base font-semibold">{{ data.counts.hybrid }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
+                    <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-3">Top Military Units</div>
+                    <div class="flex flex-col gap-2.5 max-h-[120px] overflow-y-auto custom-scrollbar">
+                        {% if data.top_mus %}
+                            {% for mu_name, count in data.top_mus %}
+                            <div class="flex items-center justify-between pb-2 border-b border-dark-card-alt last:border-b-0">
+                                <span class="text-sm text-dark-text-muted truncate mr-2">{{ mu_name }}</span>
+                                <span class="text-base font-semibold whitespace-nowrap">{{ count }} member{{ 's' if count != 1 else '' }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-sm text-dark-text-dim italic">No MU data available</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
+            <h2 class="text-base font-semibold uppercase tracking-wide mb-2">
+                Citizens Directory 
+                <small class="text-sm normal-case text-dark-text-muted">Click row to view profile</small>
+            </h2>
+            
+            <table id="usersTable" class="display nowrap w-full">
+                <thead>
+                    <tr>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Username</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Level</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Total Damage</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Wealth</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Bounty Collected</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">MU</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Current Build</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in data.users %}
+                    <tr class="border-b border-dark-card-alt text-sm cursor-pointer hover:bg-dark-card-alt transition-colors {% if user.is_banned %}border-l-4 border-l-accent-red{% endif %}" 
+                        data-username="{{ user.username }}"
+                        data-user-id="{{ user.user_id }}">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                {% if user.avatar %}
+                                <img src="{{ user.avatar }}" alt="{{ user.username }}" class="w-4 h-4 rounded-full">
+                                {% else %}
+                                <div class="w-8 h-8 rounded-full bg-dark-card-alt flex items-center justify-center">
+                                    <span class="text-xs font-bold">{{ user.username[0]|upper }}</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="font-semibold">{{ user.username }}</div>
+                                    {% if user.is_banned %}
+                                    <div class="text-xs text-accent-red uppercase">Banned</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <span class="inline-block bg-dark-card-alt px-2.5 py-1 rounded text-xs font-semibold">
+                                {{ user.level }}
+                            </span>
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ "{:,.0f}".format(user.total_dmg) }}</span>
+                        </td>
+                        <td class="p-4">
+                            {% if user.wealth > 0 %}
+                                <span class="font-semibold text-accent-green">{{ user.wealth }}</span>
+                            {% else %}
+                                <span class="text-dark-text-dim">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ "{:,.0f}".format(user.bounty_collected) }}</span>
+                        </td>
+                        <td class="p-4">
+                            {% if user.mu %}
+                                <span class="text-dark-text-muted flex flex-row items-center">
+                                {% if user.mu.avatar %}
+                                    <img src="{{ user.mu.avatar }}" alt="{{ user.mu.avatar  }}" class="w-4 h-4 rounded-full">
+                                {% else %}
+                                    <span class="text-xs font-bold">{{ user.mu.mu_name[0]|upper }}</span>
+                                {%endif%}
+                                {{ user.mu.mu_name }}
+                                </span>
+                            {% else %}
+                                <span class="text-dark-text-dim">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            <span class="font-semibold">{{ user.build_type}}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <footer class="text-center text-dark-text-subtle py-10 border-t border-dark-border mt-16 text-sm">
+            <p>Warera Eco Tools</p>
+            <p>Suggestions? Find me <a href="https://app.warera.io/user/68e563d741440cb58b76a7b9" class="hover:text-dark-text-muted transition-colors">here</a></p>
+        </footer>
+    </div>
+
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

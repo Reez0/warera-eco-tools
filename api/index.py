@@ -1,7 +1,17 @@
 from threading import Lock
 
 from flask import Flask, jsonify, request, render_template
-from .core.eco_tools import gather_data, company_breakdown, employee_breakdown, job_breakdown, build_market_lookup, get_biggest_winner_loser, store_daily_wage_snapshot,get_weekly_wage_snapshot
+from .core.eco_tools import (gather_data, 
+                             company_breakdown, 
+                             employee_breakdown, 
+                             job_breakdown, 
+                             build_market_lookup, 
+                             get_biggest_winner_loser, 
+                             store_daily_wage_snapshot,
+                             get_weekly_wage_snapshot,
+                             get_country_mapping,
+                             get_country_breakdown
+                             )
 from .core.warera_api import get_item_trading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -37,7 +47,7 @@ def health():
 def loading_page():
     return render_template("loading.html")
 
-@app.route("/app")
+@app.route("/app/")
 def home():
     try:
         country_data, market_data, deposit_count = gather_data()
@@ -82,7 +92,7 @@ def get_summary():
         player_id = request.args.get('playerId')
         market_data = get_item_trading()
         market_lookup = build_market_lookup(market_data)
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=20) as executor:
             future_company = executor.submit(company_breakdown, player_id)
             future_employee = executor.submit(employee_breakdown, player_id)
             future_job = executor.submit(job_breakdown, player_id)
@@ -104,4 +114,51 @@ def get_summary():
     finally:
         elapsed = time.perf_counter() - start
         print(f"/ summary executed in {elapsed:.3f}s")
+
+@app.route("/app/country/<country_code>/")
+def get_country_breakdown_by_code(country_code):
+    try:
+        country_breakdown = get_country_breakdown(country_code)
+        country_mapping = get_country_mapping()
+        context = {
+            'data': country_breakdown,
+            'countries': country_mapping
+        }
+        return render_template(
+            "country.html",**context
+        )
         
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        log_exception(
+            e,
+            function="/country",
+            service="index",
+        )
+        return render_template(
+            "error.html",
+            error_message="Unable to find that country. Please try again.",
+        )
+
+@app.route("/app/country/")
+def select_country():
+    try:
+        country_mapping = get_country_mapping()
+        context = {
+            'countries': country_mapping
+        }
+        return render_template(
+            "country-select.html",**context
+        )
+        
+    except Exception as e:
+        log_exception(
+            e,
+            function="/country",
+            service="index",
+        )
+        return render_template(
+            "error.html",
+            error_message="Something went wrong. Please try again.",
+        )

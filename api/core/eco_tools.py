@@ -1,4 +1,4 @@
-from collections import Counter, defaultdict
+from collections import Counter, OrderedDict, defaultdict
 from .warera_api import (
     get_map_data,
     get_country_information,
@@ -7,17 +7,37 @@ from .warera_api import (
     get_stats_by_worker,
     get_stats_by_company,
     get_user_profile_info,
-    get_wage_stats
+    get_wage_stats,
+    get_user_by_country
 )
 import os
 from datetime import datetime, timezone
 from pymongo import MongoClient, ASCENDING
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 _client = None
 _collection = None
 
 executor = ThreadPoolExecutor(max_workers=4)
+
+WAR_SKILLS = {
+    "attack",
+    "precision",
+    "criticalChance",
+    "criticalDamages",
+    "health",
+    "armor",
+    "dodge",
+    "hunger",
+}
+
+ECO_SKILLS = {
+    "energy",
+    "entrepreneurship",
+    "production",
+    "companies",
+    "management",
+}
 
 WORK_MAP = {
     "lightAmmo": {"quantity": 1, "work": 1},
@@ -295,6 +315,53 @@ def get_wage_collection():
 
     return _collection
 
+def get_country_collection():
+    global _client, _collection
+
+    if _collection is None:
+        uri = (
+            f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+            f"{os.environ['MONGO_DB_PASSWORD']}"
+            "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+        )
+
+        _client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+        )
+
+        db = _client["warera_market"]
+        _collection = db["countries"]
+
+    return _collection
+
+def get_country_breakdown_collection():
+    try:
+        uri = (
+            f"mongodb+srv://{os.environ['MONGO_DB_USER']}:"
+            f"{os.environ['MONGO_DB_PASSWORD']}"
+            "@cluster0.e7jxebn.mongodb.net/?appName=Cluster0"
+        )
+
+        _client = MongoClient(
+            uri,
+            serverSelectionTimeoutMS=2000,
+            connectTimeoutMS=2000,
+        )
+        db = _client["warera_market"]
+        _collection = db["country_breakdown"]
+
+        _collection.create_index(
+            [("country.country_code", ASCENDING)],
+            unique=True
+        )
+        return _collection
+
+    except Exception as e:
+        print(f"Error connecting to MongoDB: {e}")
+        raise
+
 def store_daily_wage_snapshot():
     collection = get_wage_collection()
     wage_data = get_wage_stats()
@@ -326,10 +393,39 @@ def get_weekly_wage_snapshot():
     collection = get_wage_collection()
     try:
         results = list(
-            collection.find({}).sort("day", 1).limit(7)
+            collection.find({}).sort("day", -1).limit(12)
+        )[::-1]
+        return results
+    except Exception as e:
+        if "E11000" not in str(e):
+            return None
+
+def get_country_mapping():
+    collection = get_country_collection()
+    try:
+        results = list(
+            collection.find({}).sort('name',1)
         )
         return results
     except Exception as e:
         if "E11000" not in str(e):
             return None
-        
+
+def get_country_breakdown(country_code):
+    
+    try:
+        collection = get_country_breakdown_collection()
+        results = collection.find_one({"country.country_code": country_code}, max_time_ms=5000)
+        mu_counter = dict(Counter(
+            user["mu"]["mu_name"]
+            for user in results.get("users", [])
+            if user.get("mu") and user["mu"].get("mu_name")
+        ))
+        mu_counter = sorted(mu_counter.items(), key=lambda x: x[1], reverse=True)[:3]
+        results['top_mus'] = mu_counter
+        return results
+    except Exception as e:
+        if "E11000" not in str(e):
+            return None
+        print(e)
+        raise

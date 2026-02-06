@@ -1,33 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/favicon_io/apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon_io/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon_io/favicon-16x16.png') }}">
-    <title>Warera Eco Tools</title>
-</head>
+{%include 'partials/header.html'%}
 <body class="bg-dark-bg text-dark-text min-h-screen leading-normal">    
     <div class="max-w-7xl mx-auto px-5">
-        <!-- Header -->
         <header class="py-10 border-b border-dark-border mb-10">
-            <h1 class="text-4xl font-bold tracking-tight mb-2 gradient-text">Warera Eco Tools</h1>
+            <h1 class="text-4xl font-bold tracking-tight mb-2">Warera Eco Tools</h1>
             <p class="text-dark-text-muted text-base">Optimize your resource production and maximize profits</p>
         </header>
 
-        <!-- Hero Section -->
+        
         <div id="hero-section" class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-3 mb-10 relative overflow-hidden">
             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
             
-            <!-- Market Trends -->
             <h3 class="uppercase tracking-widest text-dark-text-dim mb-4 font-semibold">📈 Market Trends</h3>
             <p class="tracking-wider text-dark-text-dim block mb-6">7-day market trends, and trading activity across all resources</p>
             
@@ -69,7 +51,6 @@
             
             <div class="h-px w-full bg-gray-600 my-8"></div>
             
-            <!-- Player Input -->
             <div class="uppercase tracking-widest text-dark-text-dim mb-4 font-semibold">⚙️ View company and employee breakdown</div>
             <div class="flex gap-3 mt-4 mb-4 flex-wrap">
                 <input type="text" id="playerInput" placeholder="Enter a player id or warera player profile url" 
@@ -80,7 +61,6 @@
             </div>
         </div>
 
-        <!-- Countries Section -->
         <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
             <h2 class="text-base font-semibold uppercase tracking-wide mb-2">Countries <small class="text-sm normal-case">Click row to view</small></h2>
             <table id="countryTable" class="display nowrap w-full">
@@ -97,7 +77,7 @@
                 <tbody>
                     {% for country in data %}
                     <tr class="border-b border-dark-card-alt text-sm {% if country.max_bonus_applies.value %}animate-pulse-green-slow{% endif %}" 
-                        onclick="window.open('https://app.warera.io/country/{{ country.country_id }}', '_blank').focus();">
+                        onclick="window.open('/app/country/{{country.code}}', '_blank').focus();">
                         <td class="p-4">{{ country.name }}</td>
                         <td class="p-4">
                             <img src="{{ url_for('static', filename=item_icons[country.specialization]) }}" alt="{{ country.specialization }}" title="{{ country.specialization }}" class="w-6 h-6">
@@ -133,13 +113,11 @@
             </table>
         </div>
         
-        <!-- Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
 
-            <!-- Market Prices -->
             <div class="bg-dark-card border border-dark-border rounded-xl p-8 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5">
                 <h3 class="text-base font-semibold uppercase tracking-wide flex items-center gap-2 mb-6">
-                    💰 Wage trends (7 days)
+                    💰 Wage trends (10+ days)
                 </h3>
                 <div class="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar">
                     <div class="relative w-full h-100">
@@ -148,7 +126,6 @@
                 </div>
             </div>
 
-            <!-- Deposit Count -->
             <div class="bg-dark-card border border-dark-border rounded-xl p-8 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5">
                 <h3 class="text-base font-semibold uppercase tracking-wide flex items-center gap-2 mb-6">⛏️ Resource Deposit Count</h3>
                 <div class="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar">
@@ -165,17 +142,10 @@
             </div>
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center text-dark-text-subtle py-10 border-t border-dark-border mt-16 text-sm">
-            <p>Warera Eco Tools</p>
-            <p>Suggestions? Find me <a href="https://app.warera.io/user/68e563d741440cb58b76a7b9" class="hover:text-dark-text-muted transition-colors">here</a></p>
-        </footer>
-    </div>
-
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-                <script>
+       {% include 'partials/footer.html' %}
+</body>
+               <script>
                 const chartData = {{ wage_snapshot | tojson }};
                 loadChart(chartData)
             </script>
-</body>
 </html>
