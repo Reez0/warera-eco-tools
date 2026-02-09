@@ -1,10 +1,8 @@
 from threading import Lock
 
 from flask import Flask, jsonify, request, render_template
-from .core.eco_tools import (gather_data, 
-                             company_breakdown, 
-                             employee_breakdown, 
-                             job_breakdown, 
+from .core.eco_tools import (gather_data,
+                             get_player_summary, 
                              build_market_lookup, 
                              get_biggest_winner_loser, 
                              store_daily_wage_snapshot,
@@ -76,7 +74,7 @@ def home():
     
         store_daily_wage_snapshot()
         
-        return render_template("index.html", **context)
+        return render_template("markets.html", **context)
 
     except Exception as e:
         log_exception(e, function="/home", service="index")
@@ -85,29 +83,29 @@ def home():
             error_message="An unexpected error occurred. Please try again.",
         )
     
-@app.route("/get-summary")
+@app.route("/app/player")
 def get_summary():
     try:
         start = time.perf_counter()
         player_id = request.args.get('playerId')
         market_data = get_item_trading()
         market_lookup = build_market_lookup(market_data)
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            future_company = executor.submit(company_breakdown, player_id)
-            future_employee = executor.submit(employee_breakdown, player_id)
-            future_job = executor.submit(job_breakdown, player_id)
-
-            result = {
-                'employee_breakdown': future_employee.result(),
-                'company_breakdown': future_company.result(),
-                'job_breakdown': future_job.result(),
-                'market_lookup': market_lookup
-            }
-        return jsonify(result)
+        player_summary = get_player_summary(player_id)
+        if not player_summary:
+            return render_template(
+                "error.html",
+                error_message="Unable to find that user. Please try a different user.",
+            )
+        context = {
+            'data': player_summary,
+            'market_lookup': market_lookup,
+            "item_icons": ITEM_ICONS
+        }
+        return render_template("player.html", **context)
     except Exception as e:
         log_exception(
             e,
-            function="/get-summary",
+            function="/player",
             service="index",
         )
         raise
@@ -125,12 +123,10 @@ def get_country_breakdown_by_code(country_code):
             'countries': country_mapping
         }
         return render_template(
-            "country.html",**context
+            "/country/country.html",**context
         )
         
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
         log_exception(
             e,
             function="/country",
@@ -149,7 +145,7 @@ def select_country():
             'countries': country_mapping
         }
         return render_template(
-            "country-select.html",**context
+            "/country/country-select.html",**context
         )
         
     except Exception as e:

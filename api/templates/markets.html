@@ -1,0 +1,139 @@
+{% extends "partials/base.html" %}
+
+{% block body %}
+    <div class="max-w-7xl mx-auto px-5">
+        <header class="py-10 border-b border-dark-border mb-10">
+            <h1 class="text-4xl font-bold tracking-tight mb-2">📈 Market Trends</h1>
+            <p class="text-dark-text-muted text-base">7-day market trends, and trading activity across all resources</p>
+        </header>
+
+        
+        <div id="hero-section" class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-3 mb-10 relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar mb-8">
+                {% for item in market_data %}
+                <div class="bg-dark-bg border rounded-lg p-3 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5 hover:shadow-xl 
+                    {% if item == winner %}border-accent-green border-2 animate-jiggle-pause{% elif item == loser %}border-accent-red border-2 animate-jiggle-pause{% else %}border-dark-border{% endif %}">
+                    <div class="flex items-center justify-center mb-3 pb-2.5 border-b border-dark-card-alt">
+                        <img src="{{ url_for('static', filename=item_icons[item.item]) }}" alt="{{ item.item }}" title="{{ item.item|replace('_', ' ')|title }}" class="w-8 h-8">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-dark-text-dim uppercase tracking-wider">7-day Price change</span>
+                            <span class="text-sm font-semibold {% if item['price_change_pct_7day'] > 0 %}text-accent-green{% else %}text-accent-red{% endif %}">
+                                {% if item['price_change_pct_7day'] > 0 %}+{% endif %}{{ "%.2f"|format(item['price_change_pct_7day']) }}%
+                                ({{item.first_day}} ➡️ {{item.last_day}}) 
+                            </span>
+
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-dark-text-dim uppercase tracking-wider">Last 24 hours</span>
+                            <span class="text-sm font-semibold {% if item['price_change_pct_24h'] > 0 %}text-accent-green{% else %}text-accent-red{% endif %}">
+                                {% if item['price_change_pct_24h'] > 0 %}+{% endif %}{{ "%.2f"|format(item['price_change_pct_24h']) }}%
+                                ({{item.previous_day}} ➡️ {{item.last_day}}) 
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-dark-text-dim uppercase tracking-wider">Average daily Trades</span>
+                            <span class="text-sm font-semibold">{{ "{:,.0f}".format(item.avg_daily_transactions) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-dark-text-dim uppercase tracking-wider">Average daily Volume</span>
+                            <span class="text-sm font-semibold">{{ "{:,.0f}".format(item.avg_daily_quantity) }} units</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+        </div>
+
+        <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
+            <h2 class="text-base font-semibold uppercase tracking-wide mb-2">Countries <small class="text-sm normal-case">Click row to view</small></h2>
+            <table id="countryTable" class="display nowrap w-full">
+                <thead>
+                    <tr>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Country</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Specialization</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Income Tax (%)</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Production Bonus (%)</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Found Deposit</th>
+                        <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Max possible Production Bonus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for country in data %}
+                    <tr class="border-b border-dark-card-alt text-sm {% if country.max_bonus_applies.value %}animate-pulse-green-slow{% endif %}" 
+                        onclick="window.open('/app/country/{{country.code}}', '_blank').focus();">
+                        <td class="p-4">{{ country.name }}</td>
+                        <td class="p-4">
+                            <img src="{{ url_for('static', filename=item_icons[country.specialization]) }}" alt="{{ country.specialization }}" title="{{ country.specialization }}" class="w-6 h-6">
+                        </td>
+                        <td class="p-4">{{ country.taxes.income }}%</td>
+                        <td class="p-4">{{ country.production_bonus }}%</td>
+                        <td class="p-4">
+                            {%if country.deposits%}
+                            {% set max_deposits = 5 %}
+                            {% for deposit in country.deposits[:max_deposits] %}
+                                <img src="{{ url_for('static', filename=item_icons[deposit.deposit_type]) }}" alt="{{ deposit.deposit_type }}" title="{{ deposit.deposit_type }}" class="inline-block w-5 h-5">
+                            {%endfor%}
+                            {% if country.deposits|length > max_deposits %}
+                                <small class="italic">and {{ country.deposits|length - max_deposits }} others</small>
+                            {% endif %}
+                            {% else %}
+                                No deposit found
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            {% if country.max_bonus_applies.value %}
+                                {{ country.max_bonus_applies.value }}%
+                            {% elif country.production_bonus > 30 %}
+                                    {{country.production_bonus}}%
+                            {%else%}
+                            30%
+                            {% endif %}
+                            
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
+            <div class="bg-dark-card border border-dark-border rounded-xl p-8 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5">
+                <h3 class="text-base font-semibold uppercase tracking-wide flex items-center gap-2 mb-6">
+                    💰 Wage trends (10+ days)
+                </h3>
+                <div class="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar">
+                    <div class="relative w-full h-100">
+                        <canvas style="height:320px" id="wageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-dark-card border border-dark-border rounded-xl p-8 transition-all duration-300 hover:border-dark-border-light hover:-translate-y-0.5">
+                <h3 class="text-base font-semibold uppercase tracking-wide flex items-center gap-2 mb-6">⛏️ Resource Deposit Count</h3>
+                <div class="flex flex-col gap-3 max-h-96 overflow-y-auto custom-scrollbar">
+                    {% for resource, count in deposit_count.items() %}
+                    <div class="flex justify-between items-center py-3 border-b border-dark-card-alt last:border-b-0">
+                        <span class="text-dark-text-muted text-sm flex items-center gap-2">
+                            <img src="{{ url_for('static', filename=item_icons[resource]) }}" alt="{{ resource }}" title="{{ resource }}" class="w-5 h-5">
+                            {{ resource }}
+                        </span>
+                        <span class="font-semibold text-base">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chartData = {{ wage_snapshot | tojson }};
+    loadChart(chartData);
+</script>
+{% endblock %}

@@ -1,5 +1,6 @@
-{%include 'partials/header.html'%}
-<body class="bg-dark-bg text-dark-text min-h-screen leading-normal">    
+{% extends "partials/base.html" %}
+
+{% block body %} 
     <div class="max-w-7xl mx-auto px-5">
         <!-- Header -->
         <header class="py-10 border-b border-dark-border mb-10">
@@ -39,6 +40,7 @@
             </div>
         </div>
 
-{% include 'partials/footer.html' %}
-</body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

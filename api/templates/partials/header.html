@@ -15,3 +15,46 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='img/favicon_io/favicon-16x16.png') }}">
     <title>Warera Eco Tools</title>
 </head>
+<body class="bg-dark-bg text-dark-text min-h-screen leading-normal">
+    <nav class="nav-container">
+        <div class="nav-inner">
+            <a href="/app" class="nav-brand">Warera Eco Tools</a>
+
+            <div class="nav-desktop" id="navDesktop">
+                <a href="/app" class="nav-link" data-nav="overview">Market Overview</a>
+                <a href="/app/country" class="nav-link" data-nav="markets">Country Database</a>
+                
+                <div class="nav-search-wrapper">
+                    <label for="navSearchInput" class="nav-search-label">Search by name, ID, or URL</label>
+                    <div class="nav-search-controls">
+                        <input 
+                            type="text" 
+                            id="navSearchInput" 
+                            placeholder="Search players..." 
+                            class="nav-search-input"
+                            title="Search by player name, ID, or profile URL">
+                        <button id="navSearchButton" class="nav-search-btn">Search</button>
+                    </div>
+                </div>
+            </div>
+            <button id="navToggle" class="nav-toggle" aria-label="Toggle menu">☰</button>
+        </div>
+
+        <div id="navMobile" class="nav-mobile">
+            <div class="nav-mobile-inner">
+                <a href="/app" class="nav-link" data-nav="overview">Market Overview</a>
+                <a href="/app/country" class="nav-link" data-nav="markets">Country Database</a>
+                
+                <div class="nav-mobile-search">
+                    <label for="navSearchInputMobile" class="nav-search-label">Search by name, ID, or URL</label>
+                    <input 
+                        type="text" 
+                        id="navSearchInputMobile" 
+                        placeholder="Search players..." 
+                        class="nav-search-input"
+                        title="Search by player name, ID, or profile URL">
+                    <button id="navSearchButtonMobile" class="nav-search-btn">Search</button>
+                </div>
+            </div>
+        </div>
+    </nav>

@@ -4,64 +4,154 @@
   <meta charset="UTF-8">
   <title>Warera Eco Tools</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
+    :root {
+      --brick-size: 64px;
+      --brick-gap: 6px;
+      --brick-color: #111;
+      --brick-border: rgba(255,255,255,0.06);
+      --accent: rgba(74, 222, 128, 0.35);
+    }
+
     body {
+      margin: 0;
+      height: 100vh;
+      background: #050505;
+      color: #fff;
+      font-family: system-ui, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      background: black;
-      color: #fff;
-      font-family: sans-serif;
-      flex-direction: column;
-      padding: 1rem;
+      overflow: hidden;
+    }
+
+    /* === BRICK BACKGROUND === */
+    .brick-bg {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--brick-size), 1fr));
+      grid-auto-rows: var(--brick-size);
+      gap: var(--brick-gap);
+      padding: var(--brick-gap);
+      z-index: 0;
+    }
+
+    .brick {
+      background:
+        linear-gradient(145deg, #0b0b0b, #151515);
+      border: 1px solid var(--brick-border);
+      border-radius: 4px;
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      animation: build 3s infinite;
+    }
+
+    @keyframes build {
+      0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      30% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    /* === CENTER CARD === */
+    .card {
+      position: relative;
+      z-index: 2;
+      background: rgba(10, 10, 10, 0.7);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 2rem 2.5rem;
       text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow:
+        0 10px 40px rgba(0,0,0,0.7),
+        0 0 40px var(--accent);
     }
 
     .loader-gif {
       width: clamp(72px, 20vw, 140px);
-      height: auto;
       margin-bottom: 1rem;
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.9; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+
+    h4 {
+      margin: 0.5rem 0 0.25rem;
+      letter-spacing: 0.05em;
     }
 
     small {
-      font-size: clamp(0.8rem, 2.5vw, 1rem);
-      opacity: 0.85;
+      opacity: 0.75;
+    }
+
+    .dots::after {
+      content: "";
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0% { content: ""; }
+      25% { content: "."; }
+      50% { content: ".."; }
+      75% { content: "..."; }
     }
   </style>
 </head>
+
 <body>
 
-  <img
-    class="loader-gif"
-    src="{{ url_for('static', filename='img/loader.webp') }}"
-    alt="Loading"
-    loading="eager"
-  />
+  <!-- Brick Background -->
+  <div class="brick-bg" id="brickBg"></div>
 
-  <h4>Instance is starting</h4>
-  <small>Please wait</small>
+  <!-- Center Content -->
+  <div class="card">
+    
+    <h4>Instance is starting</h4>
+    
+    <small>Please wait</small>
+    
+  </div>
+  <script>
+    // Generate bricks with staggered animation delays
+    const bg = document.getElementById('brickBg');
+    const brickCount = Math.ceil((window.innerWidth * window.innerHeight) / (64 * 64));
 
-<script>
-async function waitForAPI() {
-    let ready = false;
-    while (!ready) {
-        try {
-            const res = await fetch("/health");
-            if (res.ok) {
-                ready = true;
-            } else {
-                await new Promise(r => setTimeout(r, 1000));
-            }
-        } catch (e) {
-            await new Promise(r => setTimeout(r, 1000));
-        }
+    for (let i = 0; i < brickCount; i++) {
+      const brick = document.createElement('div');
+      brick.className = 'brick';
+      brick.style.animationDelay = `${Math.random() * 3}s`;
+      bg.appendChild(brick);
     }
-    window.location.href = "/app";
-}
 
-waitForAPI();
-</script>
+    async function waitForAPI() {
+      while (true) {
+        try {
+          const res = await fetch("/health");
+          if (res.ok) break;
+        } catch {}
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      window.location.href = "/app";
+    }
+
+    waitForAPI();
+  </script>
 
 </body>
 </html>

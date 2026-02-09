@@ -385,3 +385,20 @@ def get_country_breakdown(country_code):
             return None
         print(e)
         raise
+    
+def get_player_summary(player_id):
+    try:
+        collection = get_collection('country_breakdown')
+        result = collection.find_one({ "users.user_id": player_id}, max_time_ms=5000)
+        if result['users']:
+            for user in result['users']:
+                if user['user_id'] == player_id:
+                    user['last_updated'] = result['timestamp']
+                    return user
+                else:
+                    return None
+    except Exception as e:
+        if "E11000" not in str(e):
+            return None
+        print(e)
+        raise
