@@ -113,15 +113,15 @@
                 <div class="flex flex-col gap-2">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-dark-text-muted">Energy</span>
-                        <span class="font-semibold">{{ data.skills.energy.currentBarValue|round(1) }} / {{ data.skills.energy.total }}</span>
+                        <span class="font-semibold">{{ data.skills.energy.total }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-dark-text-muted">Health</span>
-                        <span class="font-semibold">{{ data.skills.health.currentBarValue|round(1) }} / {{ data.skills.health.total }}</span>
+                        <span class="font-semibold">{{ data.skills.health.total }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-dark-text-muted">Hunger</span>
-                        <span class="font-semibold">{{ data.skills.hunger.currentBarValue|round(1) }} / {{ data.skills.hunger.total }}</span>
+                        <span class="font-semibold">{{ data.skills.hunger.total }}</span>
                     </div>
                 </div>
             </div>
@@ -173,7 +173,7 @@
             <div class="flex items-center gap-2 mb-3 pb-3 border-b border-dark-card-alt text-sm">
                 <img src="{{ url_for('static', filename=item_icons[company.company.itemCode]) }}" alt="{{ company.company.itemCode }}" title="{{ company.company.itemCode }}" class="w-6 h-6">
                 <p class="uppercase font-bold">{{ company.company.name }}</p>
-                <small class="ml-auto">Current Market Value at:  =  BTC</small>
+                <small class="ml-auto">Current Market Value: 1  =  {{market_lookup[company.company.itemCode]}} BTC</small>
             </div>
 
             <!-- Avg Revenue / Wages / Profit -->
