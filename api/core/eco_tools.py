@@ -395,8 +395,8 @@ def get_player_summary(player_id):
                 if user['user_id'] == player_id:
                     user['last_updated'] = result['timestamp']
                     return user
-                else:
-                    return None
+        else:
+            return None
     except Exception as e:
         if "E11000" not in str(e):
             return None
