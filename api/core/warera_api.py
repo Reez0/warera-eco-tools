@@ -484,3 +484,50 @@ def get_workers(player_id):
             service="warera_api",
         )
         raise Exception(f'Unable to retrieve stats by worker {e}')
+    
+def get_transactions(player_id):
+    try:
+        url = "https://api2.warera.io/trpc/transaction.getPaginatedTransactions?batch=1&"
+        payload = f'''input={{
+            "0": {{"limit":100,"transactionType":["itemMarket","trading","donation","craftItem"],"direction":"forward","userId":"{player_id}"}}
+        }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        workers = data[0]['result']['data']
+        return workers
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_transactions",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve player transactions {e}')
+    
+def get_player_equipment(player_id):
+    try:
+        url = "https://api2.warera.io/trpc/asset.getUserAssets,user.getMe,user.getUserById,inventory.fetchCurrentEquipment?batch=1&"
+        payload = f'''input={{
+                        "2":{{"userId":"{player_id}"}},
+                        "3":{{"userId":"{player_id}"}}
+                       }}'''
+        url = url+payload
+        headers = {
+            'authorization': API_KEY,
+            'Origin': 'https://app.warera.io',
+            }
+        response = requests.get(url, headers=headers, allow_redirects=False)
+        data = response.json()
+        equipment = data[3]['result']['data']
+        return equipment
+    except Exception as e:
+        log_exception(
+            e,
+            function="get_player_equipment",
+            service="warera_api",
+        )
+        raise Exception(f'Unable to retrieve player equipment {e}')

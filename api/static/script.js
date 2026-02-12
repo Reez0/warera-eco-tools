@@ -133,7 +133,7 @@ window.MathJax = {
                 button.disabled = false;
                 button.textContent = buttonText;
                 input.value = '';
-            }, 2000);
+            }, 15000);
         }
 
         const currentPath = window.location.pathname;
@@ -297,6 +297,30 @@ countrySelect.addEventListener('change', function() {
         window.location.href = `/app/country/${this.value}`;
     }
 });
+
+function loadTransactionsTable() {
+    console.log('jQuery loaded:', typeof $ !== 'undefined');
+    console.log('DataTable available:', typeof $.fn.DataTable !== 'undefined');
+    console.log('Table exists:', $('#transactionsTable').length > 0);
+    
+        $('#transactionsTable').DataTable({
+        pageLength: 10,
+        order: [[0, 'desc']],
+        scrollX: true,
+        autoWidth: false,
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ transactions",
+            info: "Showing _START_ to _END_ of _TOTAL_ transactions",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+        });
+}
 
 
 

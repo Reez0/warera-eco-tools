@@ -4,13 +4,13 @@ from flask import Flask, jsonify, request, render_template
 from .core.eco_tools import (gather_data,
                              get_player_summary, 
                              build_market_lookup, 
-                             get_biggest_winner_loser, 
+                             get_biggest_winner_loser, infer_equipment, 
                              store_daily_wage_snapshot,
                              get_weekly_wage_snapshot,
                              get_country_mapping,
                              get_country_breakdown
                              )
-from .core.warera_api import get_item_trading
+from .core.warera_api import get_item_trading, get_transactions
 from concurrent.futures import ThreadPoolExecutor
 import time
 from .core.logger import log_exception
@@ -34,7 +34,10 @@ ITEM_ICONS = {
     "lightAmmo": "img/lightAmmo.png",
     "lead": "img/lead.png",
     "oil": "img/oil.png",
-    "steel": "img/steel.png"
+    "steel": "img/steel.png",
+    "scraps": "img/scraps.png",
+    "case1": "img/case1.png",
+    "case2": "img/case2.png"
 }
 
 @app.route("/health")
@@ -91,15 +94,24 @@ def get_summary():
         market_data = get_item_trading()
         market_lookup = build_market_lookup(market_data)
         player_summary = get_player_summary(player_id)
+        player_transactions = get_transactions(player_id)['items']
         if not player_summary:
             return render_template(
                 "error.html",
                 error_message="Unable to find that user. Please try a different user.",
             )
+        equipment_inference = infer_equipment(player_id)
+        for company in player_summary['company_breakdown']:
+            if sum(list(company['stats'].values())) > 0:
+                company['disabled'] = False
+            else:
+                company['disabled'] = True
         context = {
             'data': player_summary,
             'market_lookup': market_lookup,
-            "item_icons": ITEM_ICONS
+            "item_icons": ITEM_ICONS,
+            'equipment': equipment_inference,
+            'transactions': player_transactions
         }
         return render_template("player.html", **context)
     except Exception as e:

@@ -3,6 +3,7 @@ from .warera_api import (
     get_map_data,
     get_country_information,
     get_item_trading,
+    get_player_equipment,
     get_user_companies_workers,
     get_stats_by_worker,
     get_stats_by_company,
@@ -57,17 +58,61 @@ WORK_MAP = {
     "lead": {"quantity":1, "work":1}
 }
 
-RECIPES = {
-    "concrete": {"materials": {"limestone": 10}, "pp": 10},
-    "bread": {"materials": {"grain": 1}, "pp": 10},
-    "lightAmmo": {"materials": {"lead": 1}, "pp": 1},
-    "ammo": {"materials": {"lead": 4}, "pp": 4},
-    "heavyAmmo": {"materials": {"lead": 16}, "pp": 16},
-    "steak": {"materials": {"livestock": 1}, "pp": 20},
-    "cookedFish": {"materials": {"fish": 1}, "pp": 40},
-    "oil": {"materials": {"petroleum": 1}, "pp": 1},
-    "cocain":{"materials": {"coca": 200}, "pp": 200},
-    "steel":{"materials": {"iron": 10}, "pp": 200}
+EQUIPMENT_RANGES = {
+    "weapon": {
+        "attack": [
+            (20, 40, "knife"),
+            (50, 60, "gun"),
+            (70, 90, "rifle"),
+            (100, 120, "sniper"),
+            (130, 160, "tank"),
+            (200, 280, "jet"),
+        ],
+        "crit": [
+            (1, 5, "knife"),
+            (6, 10, "gun"),
+            (11, 15, "rifle"),
+            (16, 20, "sniper"),
+            (21, 30, "tank"),
+            (31, 40, "jet"),
+        ],
+    },
+
+    "helmet": [
+        (1, 10, "helmet1"),
+        (11, 20, "helmet2"),
+        (21, 30, "helmet3"),
+        (31, 40, "helmet4"),
+        (41, 60, "helmet5"),
+        (61, 80, "helmet6"),
+    ],
+
+    "gloves": [
+        (1, 5, "gloves1"),
+        (6, 10, "gloves2"),
+        (11, 15, "gloves3"),
+        (16, 20, "gloves4"),
+        (21, 30, "gloves5"),
+        (31, 40, "gloves6"),
+    ],
+
+    "boots": [
+        (1, 5, "boots1"),
+        (6, 10, "boots2"),
+        (11, 15, "boots3"),
+        (16, 20, "boots4"),
+        (21, 30, "boots5"),
+        (31, 40, "boots6"),
+    ],
+
+    "armor_piece": [
+        (1, 5, "1"),
+        (6, 10, "2"),
+        (11, 15, "3"),
+        (16, 20, "4"),
+        (21, 30, "5"),
+        (31, 40, "6"),
+    ],
 }
 
 
@@ -402,3 +447,35 @@ def get_player_summary(player_id):
             return None
         print(e)
         raise
+    
+def infer_equipment(player_id):
+    equipment = get_player_equipment(player_id)
+    equi = {}
+    for k,v in equipment.items():
+        if type(v) != str and type(v) != int:
+            if any(char.isdigit() for char in v['code']):
+                equi[k] = v['code']
+            else:
+                equi[k] = v['code']
+
+    equi['ammo'] = equipment.get('ammo')
+    if equi.get('weapon',None) is not None:
+       
+        equipped_weapon_no_num = equi['weapon']
+        del equi['weapon']
+        equipped_weapon = ''
+        if equipped_weapon_no_num == 'jet':
+            equipped_weapon = 'jet6'
+        if equipped_weapon_no_num == 'tank':
+            equipped_weapon = 'tank5'
+        if equipped_weapon_no_num == 'sniper':
+            equipped_weapon = 'sniper4'
+        if equipped_weapon_no_num == 'rifle':
+            equipped_weapon = 'rifle3'
+        if equipped_weapon_no_num == 'gun':
+            equipped_weapon = 'gun2'
+        if equipped_weapon_no_num == 'knife':
+            equipped_weapon = 'knife1'
+        equi[equipped_weapon_no_num] = equipped_weapon
+    return equi
+    

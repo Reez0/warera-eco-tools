@@ -1,41 +1,91 @@
 {% extends "partials/base.html" %}
 {% block body %}   
-    <!-- Header -->
      <div class="max-w-7xl mx-auto px-5">
 <header class="py-6 border-b border-dark-border mb-8">
-  <div class="flex flex-col gap-6">
-            <a href="/app/" class="text-dark-text-muted hover:text-dark-text transition-colors text-sm uppercase tracking-wide">
-            ← back to dashboard
-        </a>
-    <div class="flex items-center gap-4">
-      {% if data.avatar %}
-      <img src="{{ data.avatar }}" alt="{{ data.username }}" class="w-14 h-14 rounded-full border-2 border-dark-border-light">
-      {% else %}
-      <div class="w-14 h-14 rounded-full bg-dark-card-alt flex items-center justify-center border-2 border-dark-border-light">
-        <span class="text-xl font-bold">{{ data.username[0]|upper }}</span>
-      </div>
-      {% endif %}
-
-      <div>
-        <h1 class="text-2xl font-bold gradient-text">{{ data.username }}</h1>
-        <div class="flex flex-wrap gap-2 text-xs text-dark-text-muted">
-          <span>Level {{ data.level }}</span>
-          <span>•</span>
-          <span>{{ data.build_type }} Build</span>
-          {% if data.mu %}
-          <span>•</span>
-          <span class="flex flex-row"><img src="{{data.mu.avatar}}" alt="{{ data.mu.mu_name }}" title="{{ data.mu.mu_name }}" class="w-6 h-6">{{ data.mu.mu_name }}</span>
-          {% endif %}
-          <span>Last updated: {{data.last_updated}}</span>
+  <div class="flex items-start justify-between gap-6">
+    <div class="flex flex-col gap-6 flex-1">
+      <a href="/app/" class="text-dark-text-muted hover:text-dark-text transition-colors text-sm uppercase tracking-wide">
+        ← back to dashboard
+      </a>
+      <div class="flex items-center gap-4">
+        {% if data.avatar %}
+        <img src="{{ data.avatar }}" alt="{{ data.username }}" class="w-12 h-12 rounded-full border-2 border-dark-border-light">
+        {% else %}
+        <div class="w-14 h-14 rounded-full bg-dark-card-alt flex items-center justify-center border-2 border-dark-border-light">
+          <span class="text-xl font-bold">{{ data.username[0]|upper }}</span>
         </div>
-
+        {% endif %}
+        <div>
+          <h1 class="text-xl font-bold gradient-text">{{ data.username }}</h1>
+          <div class="flex flex-wrap gap-2 text-xs text-dark-text-muted">
+            <span>Level {{ data.level }}</span>
+            <span>•</span>
+            <span>{{ data.build_type }} Build</span>
+            {% if data.mu %}
+            <span>•</span>
+            <span class="flex flex-row items-center gap-1">
+              <img src="{{data.mu.avatar}}" alt="{{ data.mu.mu_name }}" title="{{ data.mu.mu_name }}" class="w-4 h-4 rounded">
+              {{ data.mu.mu_name }}
+            </span>
+            {% endif %}
+            <span>•</span>
+            
+          </div>
+          <small style="font-size: 10px; color:grey;">Last updated: {{data.last_updated}}</small>
+        </div>
       </div>
+      <a href="https://app.warera.io/user/{{ data.user_id }}" target="_blank"
+         class="text-xs uppercase tracking-wide text-dark-text-muted hover:text-dark-text transition-colors">
+        View on Warera →
+      </a>
     </div>
 
-    <a href="https://app.warera.io/user/{{ data.user_id }}" target="_blank"
-       class="text-xs uppercase tracking-wide text-dark-text-muted">
-      View on Warera →
-    </a>
+    <div class="bg-dark-card border border-dark-border rounded-xl p-4 min-w-[200px]">
+      <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-3">⚔️ Current Gear</div>
+      <div class="grid grid-cols-2 gap-2">
+        {% if equipment %}
+          {% for slot, item in equipment.items() %}
+          {% if item %}
+            {% set tier_colors = {
+              '1': '#1c2128',
+              '2': '#132f1d',
+              '3': '#101a30',
+              '4': '#271b38',
+              '5': '#322913',
+              '6': '#351212'
+            } %}
+            {% set tier = item[-1] if item[-1].isdigit() else '1' %}
+            {% set bg_color = tier_colors.get(tier, '#1c2128') %}
+            <div class="border border-dark-card-alt rounded p-2 flex items-center justify-center hover:border-dark-border-light transition-colors" 
+                 style="background-color: {{ bg_color }};"
+                 title="{{slot}}">
+              <img src="https://app.warera.io/images/items/{{slot}}.png?v=26" 
+                   alt="{{ item }}" 
+                   class="w-8 h-8">
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        
+        {% if not equipment or equipment.values()|select|list|length == 0 %}
+          <div class="col-span-2 text-center text-xs text-dark-text-dim italic py-4">
+            Nothing equipped
+          </div>
+        {% endif %}
+      </div>
+      
+      {% if equipment %}
+      {% set equipped_count = equipment.values()|select|list|length %}
+      {% if equipped_count > 0 %}
+      <div class="mt-3 pt-3 border-t border-dark-card-alt">
+        <div class="flex justify-between items-center text-xs">
+          <span class="text-dark-text-dim">Items Equipped</span>
+          <span class="font-semibold">{{ equipped_count }}</span>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+    </div>
   </div>
 </header>
 
@@ -61,89 +111,116 @@
             <div class="text-xl font-bold">{{ "{:,.2f}".format(data.job_breakdown.average_daily_wage_earn) }}</div>
         </div>
         <div class="bg-dark-card border border-dark-border rounded-xl p-4">
-            <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-1">Status</div>
+            <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-1">Current Account Balance</div>
             <div class="flex items-center gap-2">
-                <span class="inline-block w-2 h-2 {% if data.is_active %}bg-accent-green{% else %}bg-dark-text-dim{% endif %} rounded-full"></span>
-                <span class="text-sm font-semibold">{% if data.is_active %}Active{% else %}Inactive{% endif %}</span>
+                <span class="text-sm font-semibold">{{"{:,.3f}".format(data.monies.estimatedWealth - data.monies.estimatedCompanyValues - data.monies.estimatedInventoryValue)}}</span>
             </div>
         </div>
     </div>
 
-    <!-- Skills Section -->
-    <div class="bg-gradient-to-br from-dark-card-alt to-dark-card border border-dark-border-light rounded-2xl p-8 mb-10 relative overflow-hidden">
-        <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-dark-text-dim to-transparent"></div>
-        
-        <h3 class="uppercase tracking-widest text-dark-text-dim mb-6 font-semibold">⚡ Skills & Attributes</h3>
-        
-        <div class="grid [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))] gap-4">
-            <!-- Core Skills -->
-            <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
-                <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-3">⚔️ Combat</div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Attack</span>
-                        <span class="font-semibold">{{ data.skills.attack.total }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Critical Chance</span>
-                        <span class="font-semibold">{{ data.skills.criticalChance.total }}%</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Critical Damage</span>
-                        <span class="font-semibold">{{ data.skills.criticalDamages.total }}%</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Precision</span>
-                        <span class="font-semibold">{{ data.skills.precision.total }}%</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Armor</span>
-                        <span class="font-semibold">{{ data.skills.armor.total }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Dodge</span>
-                        <span class="font-semibold">{{ data.skills.dodge.total }}%</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Resource Skills -->
-            <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
-                <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-3">📊 Resources</div>
-                <div class="flex flex-col gap-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Energy</span>
-                        <span class="font-semibold">{{ data.skills.energy.total }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Health</span>
-                        <span class="font-semibold">{{ data.skills.health.total }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-dark-text-muted">Hunger</span>
-                        <span class="font-semibold">{{ data.skills.hunger.total }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+   <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
+        <h2 class="text-base font-semibold uppercase tracking-wide mb-6">💰 Recent Transactions</h2>
+        
+        <table id="transactionsTable" class="display nowrap w-full">
+            <thead>
+                <tr>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Date</th>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Type</th>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Item</th>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Quantity</th>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Money</th>
+                    <th class="p-4 text-left text-dark-text-dim font-semibold text-xs uppercase tracking-wide">Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr class="border-b border-dark-card-alt text-sm hover:bg-dark-card-alt transition-colors">
+                    <td class="p-4 text-xs text-dark-text-muted">
+                        {{ transaction.createdAt[:10] }}
+                    </td>
+                    
+                    <td class="p-4">
+                        {% if transaction.transactionType == 'trading' %}
+                            <span class="inline-block bg-dark-card-alt px-2 py-1 rounded text-xs">Trading</span>
+                        {% elif transaction.transactionType == 'craftItem' %}
+                            <span class="inline-block bg-dark-card-alt px-2 py-1 rounded text-xs text-accent-green">Crafted</span>
+                        {% elif transaction.transactionType == 'donation' %}
+                            <span class="inline-block bg-dark-card-alt px-2 py-1 rounded text-xs text-dark-text-muted">Donation</span>
+                        {% else %}
+                            <span class="inline-block bg-dark-card-alt px-2 py-1 rounded text-xs">{{ transaction.transactionType }}</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="p-4">
+                        {% if transaction.itemCode %}
+                            <div class="flex items-center gap-2">
+                                <img src="https://app.warera.io/images/items/{{ transaction.itemCode }}.png?v=17" 
+                                     alt="{{ transaction.itemCode }}" 
+                                     class="w-5 h-5">
+                            </div>
+                        {% elif transaction.item %}
+                            <div class="flex items-center gap-2">
+                                <img src="https://app.warera.io/images/items/{{ transaction.item.code }}.png?v=17" 
+                                     alt="{{ transaction.item.code }}" 
+                                     class="w-5 h-5">
+                            </div>
+                        {% else %}
+                            <span class="text-dark-text-dim text-xs">—</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="p-4 text-center">
+                        {% if transaction.quantity %}
+                            <span class="font-semibold">{{ transaction.quantity }}</span>
+                        {% elif transaction.item and transaction.item.quantity %}
+                            <span class="font-semibold">{{ transaction.item.quantity }}</span>
+                        {% else %}
+                            <span class="text-dark-text-dim">—</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="p-4">
+                        {% if transaction.money %}
+                            {% if transaction.buyerId == data.user_id %}
+                                <span class="font-semibold text-accent-red">-{{ "{:,.2f}".format(transaction.money) }}</span>
+                            {% else %}
+                                <span class="font-semibold text-accent-green">+{{ "{:,.2f}".format(transaction.money) }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-dark-text-dim">—</span>
+                        {% endif %}
+                    </td>
+                    
+                    <td class="p-4">
+                        {% if transaction.buyerId == data.user_id %}
+                            <span class="text-xs text-accent-red">Buyer</span>
+                        {% elif transaction.sellerId == data.user_id %}
+                            <span class="text-xs text-accent-green">Seller</span>
+                        {% else %}
+                            <span class="text-xs text-dark-text-dim">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
-    <!-- Company Breakdown -->
     <div class="bg-dark-card border border-dark-border rounded-xl p-8 mb-10">
-        <h2 class="text-base font-semibold uppercase tracking-wide mb-6">🏭 Company Portfolio</h2>
+        <h2 class="text-base font-semibold uppercase tracking-wide mb-6">🏭 Company Portfolio ({{data.company_breakdown|length}})</h2>
         
-        <!-- Summary Stats -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {% set total_profit = namespace(value=0) %}
             {% set total_revenue = namespace(value=0) %}
             {% set total_production = namespace(value=0) %}
-            {% set total_employees = namespace(value=0) %}
+            {% set total_daily_wage_spend = namespace(value=0) %}
             
             {% for company in data.company_breakdown %}
-                {% set total_profit.value = total_profit.value + company.stats.avg_daily_net_profit %}
-                {% set total_revenue.value = total_revenue.value + company.stats.avg_daily_revenue_total %}
-                {% set total_production.value = total_production.value + company.stats.avg_daily_total_pp %}
-                {% set total_employees.value = total_employees.value + company.workers|length %}
+                {% set total_profit.value = total_profit.value + company.stats.avg_daily_net_profit  %}
+                {% set total_revenue.value = total_revenue.value + company.stats.avg_daily_revenue_total  %}
+                {% set total_production.value = total_production.value + company.stats.avg_daily_total_pp  %}
+                {% set total_daily_wage_spend.value = total_daily_wage_spend.value + company.stats.avg_daily_wages_paid %}
             {% endfor %}
             
             <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
@@ -159,24 +236,22 @@
                 <div class="text-xl font-bold">{{ "{:,.0f}".format(total_production.value) }}</div>
             </div>
             <div class="bg-dark-bg border border-dark-border rounded-lg p-4">
-                <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-1">Employees</div>
-                <div class="text-xl font-bold">{{ total_employees.value }}</div>
+                <div class="text-xs text-dark-text-dim uppercase tracking-wider mb-1">Daily Wage Expenditure</div>
+                <div class="text-xl font-bold">{{ "{:,.0f}".format(total_daily_wage_spend.value) }}</div>
             </div>
         </div>
 
-        <!-- Individual Companies -->
+  
 <div class="grid grid-cols-1 [grid-template-columns:repeat(auto-fit,minmax(320px,1fr))] gap-4">
     {% for company in data.company_breakdown %}
-        <div class="bg-dark-card border border-dark-card-alt rounded-lg p-3.5 mb-3 border-l-4 border-t-white {% if company.has_workers %}border-l-accent-green{% else %}border-l-accent-gray{% endif %}">
-            
-            <!-- Company Header -->
+        <div class="bg-dark-card border border-dark-card-alt rounded-lg p-3.5 mb-3 border-l-4 {% if company.has_workers %}border-l-accent-green{% else %}border-l-accent-gray{% endif %}">
+
             <div class="flex items-center gap-2 mb-3 pb-3 border-b border-dark-card-alt text-sm">
                 <img src="{{ url_for('static', filename=item_icons[company.company.itemCode]) }}" alt="{{ company.company.itemCode }}" title="{{ company.company.itemCode }}" class="w-6 h-6">
-                <p class="uppercase font-bold">{{ company.company.name }}</p>
+                <p class="uppercase font-bold">{{ company.company.name }} {%if company.disabled %}<span class="text-accent-red">DISABLED</span>{%endif%}</p>
                 <small class="ml-auto">Current Market Value: 1  =  {{market_lookup[company.company.itemCode]}} BTC</small>
             </div>
-
-            <!-- Avg Revenue / Wages / Profit -->
+            
             <div class="grid grid-cols-3 gap-3 py-3 mb-3 border-b border-dark-card-alt">
                 <span class="flex flex-col gap-1 text-xs text-dark-text-dim uppercase tracking-wide">
                     Avg Daily Revenue
@@ -192,7 +267,7 @@
                 </span>
             </div>
 
-            <!-- Production Points / Units -->
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 py-3 mb-3 border-b border-dark-card-alt">
                 <div class="text-xs text-dark-text-dim">
                     <div class="mb-2">Avg Daily Production Points</div>
@@ -210,7 +285,6 @@
                 </div>
             </div>
 
-            <!-- Revenue split -->
             <div class="grid grid-cols-3 gap-3 text-xs text-dark-text-dim">
                 <div>From Workers<div class="text-dark-text font-semibold text-xs mt-1">{{ "%.2f"|format(company.stats.avg_daily_units_employee) }} BTC/day</div></div>
                 <div>From Self Work<div class="text-dark-text font-semibold text-xs mt-1">{{ "%.2f"|format(company.stats.avg_daily_units_self_work) }} BTC/day</div></div>
@@ -219,7 +293,7 @@
             </div>
 
             {% if company.workers %}
-                <!-- Workers Section -->
+
                 <div class="text-xs uppercase tracking-widest text-dark-text-dim mt-4 mb-2.5 font-semibold">Workers ({{ company.workers|length }})</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 mt-2">
                     {% for worker in company.workers %}
@@ -238,8 +312,8 @@
                                 <div class="text-dark-text-muted text-[10px]">Revenue Generated: <strong class="text-accent-green">{{ "%.2f"|format(worker.stats.avg_potential_daily_revenue) }}</strong> BTC/day</div>
                                 <div class="text-dark-text-muted text-[10px]">Wage Expenditure: <strong class="text-accent-red">{{ "%.2f"|format(worker.stats.avg_daily_wage_expenditure) }}</strong> BTC/day</div>
                                 <div class="text-dark-text-muted text-[10px]">Net Profit: <strong class="text-accent-green">{{ "%.2f"|format(worker.stats.avg_daily_net_profit) }}</strong> BTC/day</div>
-                                <div class="text-dark-text-muted text-[10px]">Profit Margin: <strong class="text-dark-text">{{ "%.2f"|format(worker.stats.avg_daily_profit_margin) }}%</strong></div>
-                                <div class="text-dark-text-muted text-[10px]">Break-even Price: <strong class="text-dark-text">{{ "%.2f"|format(worker.stats.break_even_price) }}</strong> BTC/unit</div>
+                                <div class="text-dark-text-muted text-[10px]">Profit Margin: <strong class="text-dark-text">{{ "%.2f"|format(worker.stats.avg_daily_profit_margin) if worker.stats.avg_daily_profit_margin is not none else "Worker likely inactive" }}%</strong></div>
+                                <div class="text-dark-text-muted text-[10px]">Break-even Price: <strong class="text-dark-text">{{ "%.2f"|format(worker.stats.break_even_price)  if worker.stats.break_even_price is not none else "Worker likely inactive" }}</strong> BTC/unit</div>
                             </div>
                         </div>
                     {% endfor %}
@@ -253,4 +327,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+    loadTransactionsTable()
+</script>
 {% endblock %}
